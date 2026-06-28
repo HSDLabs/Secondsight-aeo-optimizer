@@ -11,7 +11,15 @@ router.post('/', async (req, res) => {
 
   let browser
   try {
-    const { page, browser: b, html, screenshot, title } = await renderPage(url)
+    const {
+      page,
+      browser: b,
+      html,
+      screenshot,
+      screenshots,
+      screenshotMeta,
+      title
+    } = await renderPage(url)
     browser = b
     const [a11y, readable] = await Promise.all([
       extractAccessibility(page),
@@ -19,17 +27,25 @@ router.post('/', async (req, res) => {
     ])
     await browser.close()
 
-    res.json({ url, title, screenshot, a11y, readable })
+    res.json({
+      url,
+      title,
+      screenshot,
+      screenshots,
+      screenshotMeta,
+      a11y,
+      readable
+    })
   } catch (err) {
-  console.error(err)
+    console.error(err)
 
-  await browser?.close()
+    await browser?.close()
 
-  res.status(500).json({
-    error: err.message,
-    stack: err.stack
-  })
-}
+    res.status(500).json({
+      error: err.message,
+      stack: err.stack
+    })
+  }
 })
 
 export default router

@@ -8,18 +8,42 @@ import HumanViewPanel from './components/panels/HumanViewPanel'
 import A11yPanel from './components/panels/A11yPanel'
 import LLMTextPanel from './components/panels/LLMTextPanel'
 
-function calculateVisibilityScore(data) {
-  if (!data) return 0
+function calculateVisibilityBreakdown(data) {
+  if (!data) {
+    return {
+      score: 0,
+      items: []
+    }
+  }
 
   const wordCount = data.readable?.wordCount ?? 0
   const issueCount = data.a11y?.issues?.length ?? 0
   const structureCount = data.a11y?.snapshot?.children?.length ?? 0
+  const semanticNodeCount = Object.keys(data.a11y?.semanticIndex || {}).length
 
-  const contentScore = Math.min(35, Math.round((wordCount / 700) * 35))
-  const structureScore = Math.min(35, structureCount * 6)
-  const issuePenalty = Math.min(35, issueCount * 5)
+  const structure = Math.min(25, structureCount * 4 + Math.min(9, Math.round(semanticNodeCount / 12)))
+  const accessibility = -Math.min(25, issueCount * 5)
+  const contentDepth = wordCount >= 500 ? 20 : wordCount >= 150 ? 10 : -15
+  const extractability = data.readable?.markdown ? 10 : -10
+  const base = 50
+  const score = Math.max(0, Math.min(100, base + structure + accessibility + contentDepth + extractability))
 
-  return Math.max(0, Math.min(100, 30 + contentScore + structureScore - issuePenalty))
+  return {
+    score,
+    items: [
+      { label: 'Base', value: base },
+      { label: 'Structure', value: structure },
+      { label: 'Accessibility', value: accessibility },
+      { label: 'Content Depth', value: contentDepth },
+      { label: 'Extractability', value: extractability }
+    ],
+    placeholders: [
+      'Crawler Access',
+      'Entity Understanding',
+      'Retrieval Readiness',
+      'Citation Readiness'
+    ]
+  }
 }
 
 export default function App() {
@@ -28,6 +52,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [selectedIssue, setSelectedIssue] = useState(null)
+  const [selectedNodeId, setSelectedNodeId] = useState(null)
 
   async function analyze() {
     if (!url.trim()) return
@@ -35,6 +60,7 @@ export default function App() {
     setLoading(true)
     setError(null)
     setSelectedIssue(null)
+    setSelectedNodeId(null)
 
     try {
       const res = await fetch('/api/analyze', {
@@ -45,6 +71,7 @@ export default function App() {
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
+      setSelectedNodeId(null)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -53,7 +80,20 @@ export default function App() {
   }
 
   const issueCount = data?.a11y?.issues?.length ?? 0
-  const visibilityScore = calculateVisibilityScore(data)
+  const scoreBreakdown = calculateVisibilityBreakdown(data)
+  const visibilityScore = scoreBreakdown.score
+  const selectedNode = selectedNodeId ? data?.a11y?.semanticIndex?.[selectedNodeId] : null
+
+  function selectIssueGroup(type) {
+    setSelectedIssue(type)
+
+    const linkedNodeId = data?.a11y?.issues
+      ?.filter(issue => issue.type === type)
+      .flatMap(issue => issue.nodeIds || [])
+      .find(Boolean)
+
+    if (linkedNodeId) setSelectedNodeId(linkedNodeId)
+  }
 
   return (
     <main className="app-shell">
@@ -91,19 +131,42 @@ export default function App() {
 
       {data && !loading && (
         <>
-          <PageOverview data={data} score={visibilityScore} issueCount={issueCount} />
+          <PageOverview
+            data={data}
+            score={visibilityScore}
+            issueCount={issueCount}
+            scoreBreakdown={scoreBreakdown}
+          />
 
           <div className="comparison-grid">
-            <HumanViewPanel screenshot={data.screenshot} />
-            <A11yPanel snapshot={data.a11y?.snapshot} />
+            <HumanViewPanel
+              screenshot={data.screenshot}
+              screenshots={data.screenshots}
+              screenshotMeta={data.screenshotMeta}
+              selectedNode={selectedNode}
+            />
+            <A11yPanel
+              snapshot={data.a11y?.snapshot}
+              screenshotMeta={data.screenshotMeta}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={setSelectedNodeId}
+            />
             <LLMTextPanel readable={data.readable} />
           </div>
 
-          <ScoresPanel data={data} score={visibilityScore} issueCount={issueCount} />
+          <ScoresPanel
+            data={data}
+            score={visibilityScore}
+            issueCount={issueCount}
+            scoreBreakdown={scoreBreakdown}
+          />
           <IssuesArea
             issues={data.a11y?.issues}
+            semanticIndex={data.a11y?.semanticIndex}
             selectedIssue={selectedIssue}
-            onSelectIssue={setSelectedIssue}
+            selectedNodeId={selectedNodeId}
+            onSelectIssue={selectIssueGroup}
+            onSelectNode={setSelectedNodeId}
           />
         </>
       )}

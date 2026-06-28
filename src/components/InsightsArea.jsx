@@ -58,7 +58,7 @@ function getContentInsight(wordCount) {
   }
 }
 
-export default function InsightsArea({ data, score, issueCount }) {
+export default function InsightsArea({ data, score, issueCount, scoreBreakdown }) {
   const structure = getStructureInsight(data?.a11y?.snapshot)
   const accessibility = getAccessibilityInsight(issueCount)
   const content = getContentInsight(data?.readable?.wordCount ?? 0)
@@ -96,6 +96,41 @@ export default function InsightsArea({ data, score, issueCount }) {
           description="A combined read on semantic clarity, extracted content depth, and detected blockers."
         />
       </div>
+
+      <div className="score-breakdown">
+        <div>
+          <h3>Score Breakdown</h3>
+          <p>Transparent heuristic, not a final GEO model.</p>
+        </div>
+        <div className="breakdown-list">
+          {scoreBreakdown?.items?.map(item => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong className={item.value < 0 ? 'negative' : 'positive'}>
+                {formatDelta(item.value)}
+              </strong>
+            </div>
+          ))}
+          <div className="final-score">
+            <span>Final Score</span>
+            <strong>{score}/100</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="geo-placeholders">
+        <h3>Reserved GEO Layers</h3>
+        <div>
+          {scoreBreakdown?.placeholders?.map(layer => (
+            <span key={layer}>{layer}</span>
+          ))}
+        </div>
+      </div>
     </section>
   )
+}
+
+function formatDelta(value) {
+  if (value > 0) return `+${value}`
+  return String(value)
 }
