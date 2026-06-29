@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import './styles/App.css'
+import './styles/VisibilityLayer.css'
 import URLInput from './components/URLInput'
 import PageOverview from './components/PageOverview'
 import IssuesArea from './components/IssuesArea'
 import ScoresPanel from './components/panels/ScoresPanel'
-import HumanViewPanel from './components/panels/HumanViewPanel'
-import A11yPanel from './components/panels/A11yPanel'
-import LLMTextPanel from './components/panels/LLMTextPanel'
+import VisibilityLayer from './components/panels/VisibilityLayer'
 
 function calculateVisibilityBreakdown(data) {
   if (!data) {
@@ -17,16 +16,35 @@ function calculateVisibilityBreakdown(data) {
   }
 
   const wordCount = data.readable?.wordCount ?? 0
-  const issueCount = data.a11y?.issues?.length ?? 0
+  const issues = data.a11y?.issues || []
   const structureCount = data.a11y?.snapshot?.children?.length ?? 0
   const semanticNodeCount = Object.keys(data.a11y?.semanticIndex || {}).length
 
-  const structure = Math.min(25, structureCount * 4 + Math.min(9, Math.round(semanticNodeCount / 12)))
-  const accessibility = -Math.min(25, issueCount * 5)
-  const contentDepth = wordCount >= 500 ? 20 : wordCount >= 150 ? 10 : -15
-  const extractability = data.readable?.markdown ? 10 : -10
-  const base = 50
-  const score = Math.max(0, Math.min(100, base + structure + accessibility + contentDepth + extractability))
+  const structure = Math.min(20, structureCount * 3 + Math.min(8, Math.round(semanticNodeCount / 15)))
+
+  const criticalIssues = issues.filter(issue => issue.severity === 'critical')
+  const warningIssues = issues.filter(issue => issue.severity === 'warning')
+  const criticalPenalty = criticalIssues.length > 0
+    ? 4 + Math.min(8, (criticalIssues.length - 1) * 2)
+    : 0
+  const warningPenalty = warningIssues.length > 0
+    ? 2 + Math.min(4, warningIssues.length - 1)
+    : 0
+  const accessibility = -Math.min(16, criticalPenalty + warningPenalty)
+
+  const contentDepth = wordCount >= 800 ? 20
+    : wordCount >= 500 ? 16
+    : wordCount >= 250 ? 10
+    : wordCount >= 100 ? 4
+    : -8
+
+  const extractability = data.readable?.markdown ? 12 : -6
+
+  const h1Issues = issues.filter(issue => issue.type === 'Missing H1' || issue.type?.startsWith('Multiple H1'))
+  const headingBonus = h1Issues.length === 0 ? 8 : 0
+
+  const base = 40
+  const score = Math.max(0, Math.min(100, base + structure + accessibility + contentDepth + extractability + headingBonus))
 
   return {
     score,
@@ -35,7 +53,8 @@ function calculateVisibilityBreakdown(data) {
       { label: 'Structure', value: structure },
       { label: 'Accessibility', value: accessibility },
       { label: 'Content Depth', value: contentDepth },
-      { label: 'Extractability', value: extractability }
+      { label: 'Extractability', value: extractability },
+      { label: 'Heading Structure', value: headingBonus > 0 ? headingBonus : -(h1Issues.length * 3) }
     ],
     placeholders: [
       'Crawler Access',
@@ -138,21 +157,15 @@ export default function App() {
             scoreBreakdown={scoreBreakdown}
           />
 
-          <div className="comparison-grid">
-            <HumanViewPanel
-              screenshot={data.screenshot}
-              screenshots={data.screenshots}
-              screenshotMeta={data.screenshotMeta}
-              selectedNode={selectedNode}
-            />
-            <A11yPanel
-              snapshot={data.a11y?.snapshot}
-              screenshotMeta={data.screenshotMeta}
-              selectedNodeId={selectedNodeId}
-              onSelectNode={setSelectedNodeId}
-            />
-            <LLMTextPanel readable={data.readable} />
-          </div>
+          <VisibilityLayer
+            data={data}
+            score={visibilityScore}
+            scoreBreakdown={scoreBreakdown}
+            selectedNode={selectedNode}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={setSelectedNodeId}
+            screenshotMeta={data.screenshotMeta}
+          />
 
           <ScoresPanel
             data={data}
