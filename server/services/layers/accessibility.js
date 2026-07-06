@@ -247,12 +247,11 @@ export async function extractAccessibility(page) {
     })
 
     document.querySelectorAll('button').forEach(button => {
-      const text = button.innerText?.trim()
-      const aria = button.getAttribute('aria-label')
+      const name = getAccessibleName(button)
       const hasSvg = button.querySelector('svg')
       const hasImg = button.querySelector('img')
 
-      if (text || aria) return
+      if (name) return
       
       const style = window.getComputedStyle(button)
       if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return
@@ -270,12 +269,11 @@ export async function extractAccessibility(page) {
     })
 
     document.querySelectorAll('a').forEach(link => {
-      const text = link.innerText?.trim()
-      const aria = link.getAttribute('aria-label')
+      const name = getAccessibleName(link)
       const hasSvg = link.querySelector('svg')
       const hasImg = link.querySelector('img')
 
-      if (text || aria) return
+      if (name) return
       
       const style = window.getComputedStyle(link)
       if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return
@@ -293,12 +291,12 @@ export async function extractAccessibility(page) {
     })
 
     document.querySelectorAll('input:not([type="hidden"])').forEach(input => {
-      const aria = input.getAttribute('aria-label')
+      const name = getAccessibleName(input)
       const hasLabel =
         input.id &&
         document.querySelector(`label[for="${CSS.escape(input.id)}"]`)
 
-      if (aria || hasLabel) return
+      if (name || hasLabel) return
 
       const style = window.getComputedStyle(input)
       if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return
