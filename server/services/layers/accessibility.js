@@ -260,9 +260,9 @@ export async function extractAccessibility(page) {
         type: 'Unlabeled button',
         element: button.outerHTML.slice(0, 80),
         severity: 'critical',
-        confidence: hasSvg ? 'Medium' : 'High',
-        reason: hasSvg
-          ? 'No visible label detected but element contains SVG icon.'
+        confidence: (hasSvg || hasImg) ? 'Medium' : 'High',
+        reason: (hasSvg || hasImg)
+          ? 'No visible label detected but element contains SVG or image.'
           : 'Button contains no text, aria-label, or meaningful content.',
         targetElements: [button]
       })
@@ -282,9 +282,9 @@ export async function extractAccessibility(page) {
         type: 'Empty link',
         element: link.outerHTML.slice(0, 80),
         severity: 'warning',
-        confidence: hasSvg ? 'Medium' : 'High',
-        reason: hasSvg
-          ? 'No visible label detected but element contains SVG icon.'
+        confidence: (hasSvg || hasImg) ? 'Medium' : 'High',
+        reason: (hasSvg || hasImg)
+          ? 'No visible label detected but element contains SVG or image.'
           : 'Link contains no text, aria-label, or meaningful content.',
         targetElements: [link]
       })

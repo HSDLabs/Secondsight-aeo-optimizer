@@ -4,7 +4,7 @@ export default function emptyLink(element, context) {
   
   const before = element || '<a></a>'
   
-  let after = before
+  let after
   if (before.includes('</a>')) {
     after = before.replace('</a>', `${inferredText}</a>`)
   } else {

@@ -540,10 +540,6 @@ function computeIssueRecovery(data, progressState, currentScore, issueIdToRemove
   return Math.max(0, simulatedScore - currentScore)
 }
 
-export function getUnderstandingSections() {
-  return STAGE_BLUEPRINTS
-}
-
 function isFindingSettled(finding) {
   return finding.status === 'success' || finding.status === 'warning' || finding.status === 'failed'
 }

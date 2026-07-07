@@ -4,7 +4,7 @@ export default function unlabeledButton(element, context) {
   
   const before = element || '<button></button>'
   
-  let after = before
+  let after
   if (before.includes('<button')) {
     after = before.replace('<button', `<button aria-label="${inferredLabel}"`)
   } else {

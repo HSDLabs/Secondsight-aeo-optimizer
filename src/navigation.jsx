@@ -1,5 +1,7 @@
 import Overview from './pages/overview/Overview'
 import AIUnderstanding from './pages/ai-understanding/AIUnderstanding'
+import CrawlerAccess from './pages/crawler-access/CrawlerAccess'
+import Settings from './pages/settings/Settings'
 
 // Single source of truth for the app's navigation.
 // Both the Sidebar (grouped NavLinks) and the router (<Routes>) consume this list,
@@ -28,7 +30,8 @@ export const navItems = [
     path: '/crawler-access',
     label: 'Crawler Access',
     group: 'Diagnostics',
-    description: 'Whether AI crawlers can fetch and render the page at all — robots rules, status codes, and JavaScript rendering.'
+    description: 'Whether AI crawlers can fetch and render the page at all — robots rules, status codes, and JavaScript rendering.',
+    element: <CrawlerAccess />
   },
   {
     path: '/content-intelligence',
@@ -70,6 +73,7 @@ export const navItems = [
     path: '/settings',
     label: 'Settings',
     group: 'Settings',
-    description: 'Configure analysis behavior and preferences.'
+    description: 'Configure analysis behavior and preferences.',
+    element: <Settings />
   }
 ]

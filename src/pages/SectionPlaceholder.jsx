@@ -1,35 +1,19 @@
 import { useOutletContext } from 'react-router-dom'
 
-// One reusable, data-aware stub for every section that is not yet built.
-// It shows the section's purpose and an honest state — an empty-state before
-// analysis and a "reserved layer" note after — without inventing any numbers.
-export default function SectionPlaceholder({ label, description }) {
-  const { data } = useOutletContext()
-
+export default function SectionPlaceholder({ label }) {
   return (
-    <section className="section-block section-placeholder" aria-labelledby="placeholder-title">
-      <div className="section-header">
-        <div>
-          <p className="eyebrow">Reserved GEO Layer</p>
-          <h2 id="placeholder-title">{label}</h2>
-        </div>
+    <section className="section-block section-placeholder empty-hero" aria-labelledby="placeholder-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', margin: '0 auto', maxWidth: '800px' }}>
+      <div className="empty-hero-icon" style={{ marginBottom: '24px' }}>
+        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
+        </svg>
       </div>
-
-      <p className="placeholder-lead">{description}</p>
-
-      {data ? (
-        <div className="placeholder-note">
-          <p>
-            This section is reserved. The current analysis has run, but{' '}
-            <strong>{label}</strong> does not yet compute its own signals — it will build on the
-            existing page data in a later step.
-          </p>
-        </div>
-      ) : (
-        <div className="placeholder-note">
-          <p>Analyze a URL from the header to populate this section.</p>
-        </div>
-      )}
+      <h2 id="placeholder-title" style={{ margin: '0 0 12px', fontSize: '1.5rem', color: 'var(--text)' }}>
+        Currently working on {label}
+      </h2>
+      <p style={{ margin: 0, color: 'var(--muted)', maxWidth: '400px', fontSize: '0.95rem', lineHeight: 1.5 }}>
+        We are actively building this module. Check back soon for updates.
+      </p>
     </section>
   )
 }

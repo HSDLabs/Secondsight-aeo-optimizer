@@ -1,15 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
-import { getProgressMetrics, getStageMetrics } from './progressiveAnalysis'
+import { useState, useEffect } from 'react'
+import { getStageMetrics } from './progressiveAnalysis'
 
-const STATUS_LABELS = {
-  waiting: 'Reading signals',
-  processing: 'Building understanding',
-  success: 'Understanding complete',
-  warning: 'Needs a closer look'
-}
-
-export default function UnderstandingFlow({ data, progressState, loading, analyzedAt, issueTypes = new Set(), onAction }) {
-  const metrics = getProgressMetrics(progressState)
+export default function UnderstandingFlow({ data, progressState, issueTypes = new Set(), onAction }) {
   const stages = progressState?.stages || []
   const isComplete = progressState?.phase === 'complete'
 
@@ -46,9 +38,9 @@ export default function UnderstandingFlow({ data, progressState, loading, analyz
                       <span className="timeline-inline-dot-inner" style={{ background: stage.status === 'processing' ? stage.accent : 'rgba(255,255,255,0.1)' }} />
                     )}
                   </span>
-                  {index < stages.length - 1 && <span className="timeline-inline-line" style={{ background: isStageComplete ? 'var(--good)' : 'rgba(255,255,255,0.08)' }} />}
                 </div>
                 <span className="timeline-inline-label">{stage.title}</span>
+                {index < stages.length - 1 && <span className="timeline-inline-line" style={{ background: isStageComplete ? 'var(--good)' : 'rgba(255,255,255,0.08)' }} />}
               </div>
             )
           })}
@@ -92,7 +84,9 @@ function StageCard({ stage, index, isComplete, issueTypes, onAction, data }) {
   // Keep active stage open while it is processing
   useEffect(() => {
     if (isActive) {
-      setIsOpen(true)
+      queueMicrotask(() => {
+        setIsOpen(true)
+      })
     }
   }, [isActive])
 

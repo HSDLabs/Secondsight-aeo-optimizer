@@ -1,4 +1,4 @@
-export default function multipleH1s(element, context) {
+export default function multipleH1s(element) {
   const before = element || '<h1>First Topic</h1>\n...\n<h1>Second Topic</h1>'
   let after = before.replace('<h1>Second Topic</h1>', '<h2>Second Topic</h2>')
   if (before === after && before.includes('<h1>')) {

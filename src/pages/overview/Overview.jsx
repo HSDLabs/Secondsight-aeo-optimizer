@@ -109,11 +109,15 @@ function getScoreVerdict(score) {
   return 'Poor'
 }
 
-function getModuleStatus(key, data, score) {
+function getModuleStatus(key, data, score, crawlerData) {
   if (!data) return 'Awaiting Analysis'
   if (key === 'ai-understanding') {
     if (score == null) return 'Awaiting Analysis'
     return getScoreVerdict(score)
+  }
+  if (key === 'crawler-access') {
+    if (!crawlerData) return 'Awaiting Analysis'
+    return getScoreVerdict(crawlerData.score)
   }
   return 'Coming Soon'
 }
@@ -193,7 +197,8 @@ export default function Overview() {
     visibilityScore,
     issueCount,
     scoreBreakdown,
-    analyzedAt
+    analyzedAt,
+    crawlerData
   } = useOutletContext()
 
   const modules = MODULE_ORDER.map(({ key, path, label, description }, idx) => ({
@@ -203,8 +208,8 @@ export default function Overview() {
     label,
     description,
     icon: ModuleIcons[key],
-    status: getModuleStatus(key, data, visibilityScore),
-    isScoreReal: key === 'ai-understanding' && data != null
+    status: getModuleStatus(key, data, visibilityScore, crawlerData),
+    isScoreReal: (key === 'ai-understanding' && data != null) || (key === 'crawler-access' && crawlerData != null)
   }))
 
   const topIssues = getTopIssueGroups(data?.a11y?.issues, 3)
@@ -234,19 +239,27 @@ export default function Overview() {
       )}
 
       {loading && (
-        <section className="empty-hero loading-state">
-          <div className="empty-hero-content">
-            <div className="loading-spinner" />
-            <h2>Analyzing page…</h2>
-            <p>Capturing the browser view, semantic structure, and readability signals.</p>
+        <div className="overview-skeleton" style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginTop: '16px' }}>
+          <div className="skeleton-box" style={{ height: '200px', width: '100%' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+            <div className="skeleton-box" style={{ height: '120px' }} />
+            <div className="skeleton-box" style={{ height: '120px' }} />
+            <div className="skeleton-box" style={{ height: '120px' }} />
+            <div className="skeleton-box" style={{ height: '120px' }} />
           </div>
-        </section>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '16px' }}>
+            <div className="skeleton-box" style={{ height: '340px' }} />
+            <div className="skeleton-box" style={{ height: '340px' }} />
+            <div className="skeleton-box" style={{ height: '340px' }} />
+          </div>
+        </div>
       )}
 
       {data && !loading && (
         <>
           <PageOverview
             data={data}
+            crawlerData={crawlerData}
             score={visibilityScore}
             issueCount={issueCount}
             analyzedAt={analyzedAt}
@@ -259,8 +272,10 @@ export default function Overview() {
 
             <div className="geo-overview-grid">
               {modules.map(module => {
-                const scoreDisplay = module.isScoreReal ? visibilityScore : 0
-                const tone = module.isScoreReal ? getScoreTone(visibilityScore) : 'muted'
+                const scoreDisplay = module.key === 'ai-understanding'
+                  ? visibilityScore
+                  : (module.key === 'crawler-access' && crawlerData ? crawlerData.score : 0)
+                const tone = module.isScoreReal ? getScoreTone(scoreDisplay) : 'muted'
                 return (
                   <NavLink
                     key={module.key}
