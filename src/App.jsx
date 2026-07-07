@@ -6,6 +6,8 @@ import './styles/Layout.css'
 import AppLayout from './layout/AppLayout'
 import SectionPlaceholder from './pages/SectionPlaceholder'
 import { navItems } from './navigation'
+import { useProgressiveAnalysis } from './hooks/useProgressiveAnalysis'
+import { getProgressMetrics } from './pages/ai-understanding/progressiveAnalysis'
 
 function calculateVisibilityBreakdown(data) {
   if (!data) {
@@ -73,28 +75,43 @@ export default function App() {
   const [analyzedAt, setAnalyzedAt] = useState(null)
   const [selectedIssue, setSelectedIssue] = useState(null)
   const [selectedNodeId, setSelectedNodeId] = useState(null)
+  const {
+    progressState: analysisProgress,
+    startAnalysisProgress,
+    applyProgressEvent,
+    clearAnalysisProgress
+  } = useProgressiveAnalysis()
 
   async function analyze() {
     if (!url.trim()) return
+
+    const trimmedUrl = url.trim()
 
     setLoading(true)
     setError(null)
     setSelectedIssue(null)
     setSelectedNodeId(null)
+    setData(null)
+    setAnalyzedAt(null)
+    startAnalysisProgress(trimmedUrl)
 
     try {
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url.trim() })
+        body: JSON.stringify({ url: trimmedUrl })
       })
       const json = await res.json()
       if (json.error) throw new Error(json.error)
       setData(json)
       setAnalyzedAt(new Date().toISOString())
       setSelectedNodeId(null)
+      clearAnalysisProgress()
+      applyProgressEvent({ type: 'analysis/hydrate', url: trimmedUrl, data: json, at: Date.now() })
     } catch (e) {
       setError(e.message)
+      applyProgressEvent({ type: 'analysis/failed', errorMessage: e.message })
+      clearAnalysisProgress()
     } finally {
       setLoading(false)
     }
@@ -102,7 +119,10 @@ export default function App() {
 
   const issueCount = data?.a11y?.issues?.length ?? 0
   const scoreBreakdown = calculateVisibilityBreakdown(data)
-  const visibilityScore = scoreBreakdown.score
+  const progressMetrics = getProgressMetrics(analysisProgress)
+  const visibilityScore = analysisProgress?.phase && analysisProgress.phase !== 'idle'
+    ? progressMetrics.understandingScore
+    : scoreBreakdown.score
   const selectedNode = selectedNodeId ? data?.a11y?.semanticIndex?.[selectedNodeId] : null
 
   function selectIssueGroup(type) {
@@ -131,7 +151,8 @@ export default function App() {
     selectedNodeId,
     setSelectedNodeId,
     selectedIssue,
-    selectIssueGroup
+    selectIssueGroup,
+    analysisProgress
   }
 
   return (

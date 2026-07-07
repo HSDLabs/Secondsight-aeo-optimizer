@@ -6,7 +6,8 @@ export default function TreeNode({
   screenshotMeta,
   selectedNodeId,
   selectedPath = [],
-  onSelectNode
+  onSelectNode,
+  isFocused
 }) {
   const isInSelectedPath = selectedPath.includes(node?.id)
   const isSelected = node?.id === selectedNodeId
@@ -15,13 +16,13 @@ export default function TreeNode({
   const rowRef = useRef(null)
 
   useEffect(() => {
-    if (!isSelected) return
+    if (!isSelected || !isFocused) return
 
     rowRef.current?.scrollIntoView({
       block: 'center',
       behavior: 'smooth'
     })
-  }, [isSelected])
+  }, [isSelected, isFocused])
 
   if (!node) return null
 
@@ -88,6 +89,7 @@ export default function TreeNode({
             selectedNodeId={selectedNodeId}
             selectedPath={selectedPath}
             onSelectNode={onSelectNode}
+            isFocused={isFocused}
           />
         ))}
     </div>

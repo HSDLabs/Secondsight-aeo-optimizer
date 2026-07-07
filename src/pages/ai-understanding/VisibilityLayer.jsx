@@ -1,36 +1,74 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import TreeNode from './TreeNode'
+import { getScoreVerdict } from './progressiveAnalysis'
 
 /**
  * VisibilityLayer – The polished "Layer 1 – Visibility Overview"
  *
  * A single, viewport-height section that combines:
- * 1. Human View   – 3D perspective website preview
- * 2. Machine Structure – Compact semantic tree
- * 3. LLM Extraction – Content summary + inline stats
+ * 1. Human View   – Flat website preview card
+ * 2. Accessibility Tree – High-level landmarks with child counts
+ * 3. Readable Content – Extraction stats & overview
  * 4. AI Visibility Score – Animated donut gauge
- *
- * Everything fits in one view without excessive scrolling.
  */
 
 export default function VisibilityLayer({
   data,
   score,
+  scoreBreakdown,
   selectedNodeId,
   onSelectNode,
-  screenshotMeta
+  screenshotMeta,
+  focusPanel,
+  loading = false
 }) {
-  if (!data) return null
+  const [showTreeModal, setShowTreeModal] = useState(false)
+  const [showContentModal, setShowContentModal] = useState(false)
+  const [showScoreModal, setShowScoreModal] = useState(false)
+
+  if (!data) {
+    if (!loading) return null
+
+    return (
+      <section className="visibility-layer loading-visibility-layer" aria-labelledby="layer-1-title">
+        <div className="layer-header">
+          <p className="eyebrow" style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', color: 'var(--muted)' }}>
+            Layer 1: Evidence First
+          </p>
+          <p className="layer-subtitle" style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: '0.9rem' }}>
+            Raw signals AI systems see before reaching any conclusion.
+          </p>
+        </div>
+
+        <div className="layer-grid">
+          <LoadingLayerCard title="Human View" eyebrow="What users see" />
+          <LoadingLayerCard title="Accessibility Tree" eyebrow="What browsers & assistive tech see" />
+          <LoadingLayerCard title="Readable Content" eyebrow="What LLMs can extract" />
+          <LoadingScoreCard />
+        </div>
+      </section>
+    )
+  }
 
   const screenshot = data.screenshots?.viewport || data.screenshot
   const fullPageScreenshot = data.screenshots?.fullPage
   const snapshot = data.a11y?.snapshot
   const readable = data.readable
 
+  // Tree modal path calculation
+  const selectedPath = findNodePath(snapshot, selectedNodeId)
+
   return (
     <section className="visibility-layer" aria-labelledby="layer-1-title">
-      <div className="layer-header">
-        <p className="eyebrow">Layer 1 – Visibility Overview</p>
+      <div className="layer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
+        <div>
+          <p className="eyebrow" style={{ textTransform: 'uppercase', letterSpacing: '0.1em', fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600 }}>
+            Layer 1: Evidence First
+          </p>
+          <p className="layer-subtitle" style={{ margin: '4px 0 0', color: 'var(--muted)', fontSize: '0.9rem' }}>
+            Raw signals AI systems see before reaching any conclusion.
+          </p>
+        </div>
       </div>
 
       <div className="layer-grid">
@@ -38,50 +76,130 @@ export default function VisibilityLayer({
           screenshot={screenshot}
           fullPageScreenshot={fullPageScreenshot}
           screenshotMeta={screenshotMeta}
+          isFocused={focusPanel === 'human'}
         />
 
         <MachineStructureCompact
           snapshot={snapshot}
-          screenshotMeta={screenshotMeta}
           selectedNodeId={selectedNodeId}
           onSelectNode={onSelectNode}
+          isFocused={focusPanel === 'structure'}
+          onViewTree={() => setShowTreeModal(true)}
         />
 
-        <LLMExtractionCompact readable={readable} />
+        <LLMExtractionCompact
+          readable={readable}
+          snapshot={snapshot}
+          isFocused={focusPanel === 'llm'}
+          onViewContent={() => setShowContentModal(true)}
+        />
 
-        <ScoreGauge score={score} />
+        <ScoreGauge
+          score={score}
+          isFocused={focusPanel === 'score'}
+          onViewScoreBreakdown={() => setShowScoreModal(true)}
+        />
       </div>
+
+      {/* MODALS */}
+      {showTreeModal && (
+        <div className="layer-modal-backdrop" onClick={() => setShowTreeModal(false)}>
+          <div className="layer-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="layer-modal-header">
+              <h3>Accessibility Tree / Semantic Structure</h3>
+              <button type="button" className="layer-modal-close" onClick={() => setShowTreeModal(false)}>&times;</button>
+            </div>
+            <div className="layer-modal-body">
+              <div className="compact-tree" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+                {snapshot && (
+                  <TreeNode
+                    node={snapshot}
+                    screenshotMeta={screenshotMeta}
+                    selectedNodeId={selectedNodeId}
+                    selectedPath={selectedPath}
+                    onSelectNode={(nodeId) => {
+                      onSelectNode(nodeId)
+                      setShowTreeModal(false)
+                    }}
+                    isFocused={true}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showContentModal && (
+        <div className="layer-modal-backdrop" onClick={() => setShowContentModal(false)}>
+          <div className="layer-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="layer-modal-header">
+              <h3>Readable Extracted Content</h3>
+              <button type="button" className="layer-modal-close" onClick={() => setShowContentModal(false)}>&times;</button>
+            </div>
+            <div className="layer-modal-body llm-raw" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+              <pre>{readable?.markdown || 'No readable content extracted.'}</pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showScoreModal && (
+        <div className="layer-modal-backdrop" onClick={() => setShowScoreModal(false)}>
+          <div className="layer-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="layer-modal-header">
+              <h3>AI Visibility Score Breakdown</h3>
+              <button type="button" className="layer-modal-close" onClick={() => setShowScoreModal(false)}>&times;</button>
+            </div>
+            <div className="layer-modal-body">
+              <div className="score-breakdown-list">
+                {scoreBreakdown?.items?.map(item => (
+                  <div key={item.label} className="breakdown-item" style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+                    <span style={{ color: 'var(--muted)', fontWeight: 500 }}>{item.label}</span>
+                    <strong style={{ color: item.value < 0 ? 'var(--poor)' : item.value > 0 ? 'var(--good)' : 'var(--text)' }}>
+                      {item.value > 0 ? `+${item.value}` : item.value}
+                    </strong>
+                  </div>
+                ))}
+                <div className="breakdown-item total" style={{ display: 'flex', justifyContent: 'space-between', padding: '16px 0 0', fontSize: '1.2rem' }}>
+                  <strong>Total AI Visibility Score</strong>
+                  <strong style={{ color: 'var(--good)' }}>{score}/100</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   )
 }
 
-function HumanViewCompact({ screenshot, fullPageScreenshot, screenshotMeta }) {
-  const [mode, setMode] = useState('viewport')
-  const [isHovered, setIsHovered] = useState(false)
-  const frameRef = useRef(null)
-  const activeScreenshot = mode === 'fullPage' ? fullPageScreenshot : screenshot
+function HumanViewCompact({ screenshot, fullPageScreenshot, screenshotMeta, isFocused }) {
   const dimensions = screenshotMeta?.viewport
     ? `${screenshotMeta.viewport.width} × ${screenshotMeta.viewport.height}`
     : null
 
+  const handleOpenFullPage = () => {
+    const activeScr = fullPageScreenshot || screenshot
+    if (activeScr) {
+      const win = window.open()
+      win.document.write(`<iframe src="data:image/png;base64,${activeScr}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`)
+    }
+  }
+
   return (
-    <div className="layer-card human-card">
+    <div className={`layer-card human-card ${isFocused ? 'focused' : ''}`}>
       <div className="layer-card-header">
         <div>
-          <p className="card-eyebrow">What humans see</p>
-          <h3>Human View</h3>
+          <p className="card-eyebrow">Human View</p>
+          <h3>What users see</h3>
         </div>
         <span className="card-meta">{dimensions || ''}</span>
       </div>
 
-      <div
-        className="perspective-frame"
-        ref={frameRef}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        {activeScreenshot ? (
-          <div className={`perspective-stage ${isHovered ? 'flat' : ''}`}>
+      <div className="perspective-frame flat-preview">
+        {screenshot ? (
+          <div className="perspective-stage flat">
             <div className="browser-chrome">
               <div className="chrome-dots">
                 <span className="dot red" />
@@ -97,8 +215,8 @@ function HumanViewCompact({ screenshot, fullPageScreenshot, screenshotMeta }) {
             </div>
             <div className="browser-viewport">
               <img
-                src={`data:image/png;base64,${activeScreenshot}`}
-                alt="Analyzed page"
+                src={`data:image/png;base64,${screenshot}`}
+                alt="Analyzed page viewport"
                 draggable="false"
               />
             </div>
@@ -108,161 +226,178 @@ function HumanViewCompact({ screenshot, fullPageScreenshot, screenshotMeta }) {
         )}
       </div>
 
-      <div className="mode-bar">
-        <button
-          className={mode === 'viewport' ? 'active' : ''}
-          type="button"
-          onClick={() => setMode('viewport')}
-        >
-          Viewport
-        </button>
-        <button
-          className={mode === 'fullPage' ? 'active' : ''}
-          type="button"
-          onClick={() => setMode('fullPage')}
-        >
-          Full Page
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function MachineStructureCompact({ snapshot, screenshotMeta, selectedNodeId, onSelectNode }) {
-  const selectedPath = useMemo(() => findNodePath(snapshot, selectedNodeId), [snapshot, selectedNodeId])
-  const stats = useMemo(() => getTreeStats(snapshot), [snapshot])
-
-  return (
-    <div className="layer-card structure-card">
-      <div className="layer-card-header">
-        <div>
-          <p className="card-eyebrow">What machines understand</p>
-          <h3>Machine Structure</h3>
-        </div>
-        <span className="card-meta">Semantic tree</span>
-      </div>
-
-      <div className="structure-stats">
-        {stats.map(([role, count]) => (
-          <div key={role} className="struct-stat">
-            <span className="struct-label">{role}</span>
-            <span className="struct-value">{count}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="compact-tree">
-        {snapshot && (
-          <TreeNode
-            node={snapshot}
-            screenshotMeta={screenshotMeta}
-            selectedNodeId={selectedNodeId}
-            selectedPath={selectedPath}
-            onSelectNode={onSelectNode}
-          />
-        )}
-      </div>
-
-      <button className="view-raw-btn" type="button" onClick={() => {}}>
-        View raw structure
+      <button className="view-raw-btn" type="button" onClick={handleOpenFullPage}>
+        Open full page
       </button>
     </div>
   )
 }
 
-function LLMExtractionCompact({ readable }) {
-  const [activeTab, setActiveTab] = useState('summary')
-  const summary = useMemo(() => summarizeReadable(readable), [readable])
-
+function LoadingLayerCard({ title, eyebrow }) {
   return (
-    <div className="layer-card llm-card">
+    <div className="layer-card loading-layer-card">
       <div className="layer-card-header">
         <div>
-          <p className="card-eyebrow">What AI systems extract</p>
-          <h3>LLM Extraction</h3>
+          <p className="card-eyebrow">{eyebrow}</p>
+          <h3>{title}</h3>
         </div>
-        <span className="card-meta">{readable?.wordCount ?? 0} words</span>
+        <span className="card-meta">Loading</span>
       </div>
 
-      <div className="llm-tabs">
-        {[['summary', 'Summary'], ['metadata', 'Metadata'], ['raw', 'Raw Extraction']].map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={activeTab === id ? 'active' : ''}
-            onClick={() => setActiveTab(id)}
-          >
-            {label}
-          </button>
-        ))}
+      <div className="loading-card-body">
+        <div className="loading-block large" />
+        <div className="loading-block medium" />
+        <div className="loading-block small" />
+      </div>
+    </div>
+  )
+}
+
+function LoadingScoreCard() {
+  return (
+    <div className="layer-card score-card loading-score-card focused">
+      <p className="card-eyebrow center">AI Visibility Score</p>
+      <div className="loading-ring" />
+      <div className="loading-score-label">Building</div>
+      <p className="score-desc">AI is assembling the evidence before the score settles.</p>
+    </div>
+  )
+}
+
+function MachineStructureCompact({ snapshot, selectedNodeId, onSelectNode, isFocused, onViewTree }) {
+  const landmarks = useMemo(() => getLandmarksAndCounts(snapshot), [snapshot])
+  const headerCount = useMemo(() => landmarks.header.reduce((sum, n) => sum + countNodesInSubtree(n), 0), [landmarks.header])
+  const navCount = useMemo(() => landmarks.nav.reduce((sum, n) => sum + countNodesInSubtree(n), 0), [landmarks.nav])
+  const mainCount = useMemo(() => landmarks.main.reduce((sum, n) => sum + countNodesInSubtree(n), 0), [landmarks.main])
+  const footerCount = useMemo(() => landmarks.footer.reduce((sum, n) => sum + countNodesInSubtree(n), 0), [landmarks.footer])
+
+  return (
+    <div className={`layer-card structure-card ${isFocused ? 'focused' : ''}`}>
+      <div className="layer-card-header">
+        <div>
+          <p className="card-eyebrow">Accessibility Tree</p>
+          <h3>What browsers & assistive tech see</h3>
+        </div>
+      </div>
+
+      <div className="landmark-list-view">
+        <div className="landmark-item">
+          <div className="landmark-item-left">
+            <span className="landmark-caret">&gt;</span>
+            <svg className="landmark-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span className="landmark-name">Document</span>
+          </div>
+          <span className="landmark-badge">1 root</span>
+        </div>
+
+        <div className="landmark-item">
+          <div className="landmark-item-left">
+            <span className="landmark-caret">&gt;</span>
+            <svg className="landmark-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><rect x="3" y="3" width="18" height="6" rx="1"/><rect x="3" y="11" width="18" height="10" rx="1"/></svg>
+            <span className="landmark-name">Header</span>
+          </div>
+          <span className="landmark-badge">{headerCount} {headerCount === 1 ? 'node' : 'nodes'}</span>
+        </div>
+
+        <div className="landmark-item">
+          <div className="landmark-item-left">
+            <span className="landmark-caret">&gt;</span>
+            <svg className="landmark-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <span className="landmark-name">Navigation</span>
+          </div>
+          <span className="landmark-badge">{navCount} {navCount === 1 ? 'node' : 'nodes'}</span>
+        </div>
+
+        <div className="landmark-item">
+          <div className="landmark-item-left">
+            <span className="landmark-caret">&gt;</span>
+            <svg className="landmark-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            <span className="landmark-name">Main Content</span>
+          </div>
+          <span className="landmark-badge">{mainCount} {mainCount === 1 ? 'node' : 'nodes'}</span>
+        </div>
+
+        <div className="landmark-item">
+          <div className="landmark-item-left">
+            <span className="landmark-caret">&gt;</span>
+            <svg className="landmark-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><rect x="3" y="15" width="18" height="6" rx="1"/><rect x="3" y="3" width="18" height="10" rx="1"/></svg>
+            <span className="landmark-name">Footer</span>
+          </div>
+          <span className="landmark-badge">{footerCount} {footerCount === 1 ? 'node' : 'nodes'}</span>
+        </div>
+      </div>
+
+      <button className="view-raw-btn" type="button" onClick={onViewTree}>
+        View tree
+      </button>
+    </div>
+  )
+}
+
+function LLMExtractionCompact({ readable, snapshot, isFocused, onViewContent }) {
+  const summary = useMemo(() => summarizeReadable(readable), [readable])
+  const wordCount = readable?.wordCount ?? 0
+  const headingCount = useMemo(() => {
+    return (readable?.markdown?.match(/^#{1,6}\s+/gm) || []).length || summary.headings.length
+  }, [readable, summary])
+
+  const linkCount = useMemo(() => {
+    if (!snapshot) return 0
+    const counts = countAllRoles(snapshot)
+    return counts['a'] || 0
+  }, [snapshot])
+
+  return (
+    <div className={`layer-card llm-card ${isFocused ? 'focused' : ''}`}>
+      <div className="layer-card-header">
+        <div>
+          <p className="card-eyebrow">Readable Content</p>
+          <h3>What LLMs can extract</h3>
+        </div>
+      </div>
+
+      <div className="llm-compact-stats">
+        <div className="llm-stat-col">
+          <strong className="llm-stat-number">{wordCount.toLocaleString()}</strong>
+          <span className="llm-stat-label">words</span>
+        </div>
+        <div className="llm-stat-col">
+          <strong className="llm-stat-number">{headingCount}</strong>
+          <span className="llm-stat-label">headings</span>
+        </div>
+        <div className="llm-stat-col">
+          <strong className="llm-stat-number">{linkCount}</strong>
+          <span className="llm-stat-label">links</span>
+        </div>
       </div>
 
       <div className="llm-body">
-        {activeTab === 'summary' && (
-          <>
-            <p className="llm-excerpt">{summary.overview}</p>
-
-            <div className="llm-metrics">
-              <div>
-                <span>Words</span>
-                <strong>{(readable?.wordCount ?? 0).toLocaleString()}</strong>
-              </div>
-              <div>
-                <span>Headings</span>
-                <strong>{summary.headings.length}</strong>
-              </div>
-              <div>
-                <span>Signals</span>
-                <strong>{summary.signalCount}</strong>
-              </div>
-            </div>
-          </>
-        )}
-
-        {activeTab === 'metadata' && (
-          <div className="llm-metadata">
-            <div><span>Title</span><strong>{readable?.title || 'Not extracted'}</strong></div>
-            <div><span>Excerpt</span><strong>{readable?.excerpt || 'Not extracted'}</strong></div>
-            <div><span>Word count</span><strong>{(readable?.wordCount ?? 0).toLocaleString()}</strong></div>
-          </div>
-        )}
-
-        {activeTab === 'raw' && (
-          <div className="llm-raw">
-            <pre>{readable?.markdown || 'No readable content extracted.'}</pre>
-          </div>
-        )}
+        <p className="llm-excerpt">{summary.overview}</p>
       </div>
 
-      <button className="view-raw-btn" type="button" onClick={() => setActiveTab('raw')}>
+      <button className="view-raw-btn" type="button" onClick={onViewContent}>
         View extracted content
       </button>
     </div>
   )
 }
 
-function ScoreGauge({ score }) {
+function ScoreGauge({ score, isFocused, onViewScoreBreakdown }) {
   const gaugeRef = useRef(null)
   const [animatedScore, setAnimatedScore] = useState(0)
   const normalizedScore = Math.max(0, Math.min(100, score || 0))
 
-  const scoreColor = normalizedScore >= 80
-    ? '#48c78e'
-    : normalizedScore >= 55
-    ? '#f2b84b'
-    : '#ff6b6b'
+  const verdict = getScoreVerdict(normalizedScore)
+  const scoreColor = verdict.color
+  const scoreLabel = verdict.label
 
-  const scoreLabel = normalizedScore >= 80
-    ? 'Good'
+  const scoreDescription = normalizedScore >= 90
+    ? 'AI can understand this page'
+    : normalizedScore >= 75
+    ? 'AI has good page understanding'
     : normalizedScore >= 55
-    ? 'Fair'
-    : 'Poor'
-
-  const scoreDescription = normalizedScore >= 80
-    ? 'Strong AI visibility with solid content signals.'
-    : normalizedScore >= 55
-    ? 'Moderate visibility. Some improvements recommended.'
-    : 'Low visibility. Significant improvements needed.'
+    ? 'AI understanding is limited'
+    : 'AI struggles to understand page'
 
   useEffect(() => {
     let frame
@@ -288,8 +423,8 @@ function ScoreGauge({ score }) {
   const offset = circumference - (animatedScore / 100) * circumference
 
   return (
-    <div className="layer-card score-card">
-      <p className="card-eyebrow center">AI Visibility Score</p>
+    <div className={`layer-card score-card ${isFocused ? 'focused' : ''}`}>
+      <p className="card-eyebrow center">AI VISIBILITY SCORE</p>
 
       <div className="gauge-container" ref={gaugeRef}>
         <svg
@@ -338,11 +473,9 @@ function ScoreGauge({ score }) {
       <p className="score-desc">{scoreDescription}</p>
 
       <button
-        className="view-raw-btn"
+        className="score-breakdown-link-btn"
         type="button"
-        onClick={() => {
-          // Could open a modal or scroll to breakdown
-        }}
+        onClick={onViewScoreBreakdown}
       >
         View score breakdown
       </button>
@@ -361,29 +494,6 @@ function findNodePath(node, nodeId, path = []) {
   return []
 }
 
-function getTreeStats(snapshot) {
-  if (!snapshot) return []
-  const counts = countAllRoles(snapshot)
-  const order = [
-    ['links', 'a'],
-    ['images', 'img'],
-    ['buttons', 'button'],
-    ['inputs', 'input'],
-    ['sections', 'section'],
-    ['headings', ['h1', 'h2', 'h3']]
-  ]
-
-  return order
-    .map(([label, roles]) => {
-      const count = Array.isArray(roles)
-        ? roles.reduce((sum, r) => sum + (counts[r] || 0), 0)
-        : counts[roles] || 0
-      return [label, count]
-    })
-    .filter(([, count]) => count > 0)
-    .slice(0, 4)
-}
-
 function countAllRoles(node) {
   const acc = {}
   function walk(n) {
@@ -394,6 +504,49 @@ function countAllRoles(node) {
   }
   walk(node)
   return acc
+}
+
+function countNodesInSubtree(node) {
+  if (!node) return 0
+  let count = 1
+  if (node.children) {
+    for (const child of node.children) {
+      count += countNodesInSubtree(child)
+    }
+  }
+  return count
+}
+
+function getLandmarksAndCounts(snapshot) {
+  const landmarks = {
+    document: null,
+    header: [],
+    nav: [],
+    main: [],
+    footer: []
+  }
+
+  function walk(node) {
+    if (!node) return
+    const role = node.role || ''
+    if (role === 'document' && !landmarks.document) {
+      landmarks.document = node
+    } else if (role === 'header') {
+      landmarks.header.push(node)
+    } else if (role === 'nav') {
+      landmarks.nav.push(node)
+    } else if (role === 'main') {
+      landmarks.main.push(node)
+    } else if (role === 'footer') {
+      landmarks.footer.push(node)
+    }
+    if (node.children) {
+      for (const child of node.children) walk(child)
+    }
+  }
+
+  walk(snapshot)
+  return landmarks
 }
 
 function summarizeReadable(readable) {

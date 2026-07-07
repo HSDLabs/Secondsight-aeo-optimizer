@@ -18,17 +18,17 @@ export const navItems = [
     element: <Overview />
   },
   {
+    path: '/ai-understanding',
+    label: 'Machine Understanding',
+    group: 'Diagnostics',
+    description: 'How well machines grasp the page structure, semantics, and entities.',
+    element: <AIUnderstanding />
+  },
+  {
     path: '/crawler-access',
     label: 'Crawler Access',
     group: 'Diagnostics',
     description: 'Whether AI crawlers can fetch and render the page at all — robots rules, status codes, and JavaScript rendering.'
-  },
-  {
-    path: '/ai-understanding',
-    label: 'AI Understanding',
-    group: 'Diagnostics',
-    description: 'How well machines grasp the page structure, semantics, and entities.',
-    element: <AIUnderstanding />
   },
   {
     path: '/content-intelligence',
