@@ -42,7 +42,8 @@ function getTone(score) {
 
 const PILLAR_MODULES = [
   { label: 'Crawler Access' },
-  { label: 'AI Understanding', isReal: true }
+  { label: 'AI Understanding', isReal: true },
+  { label: 'External Intelligence' }
 ]
 
 function ScoreGauge({ score, isAwaiting, loading }) {
@@ -155,7 +156,7 @@ function PerspectiveThumbnail({ screenshot, url }) {
   )
 }
 
-export default function PageOverview({ data, loading, crawlerData, score, aiScore, analyzedAt }) {
+export default function PageOverview({ data, loading, crawlerData, score, aiScore, externalScore, analyzedAt }) {
   const screenshot = data?.screenshots?.viewport || data?.screenshot
   const title = data?.title || data?.readable?.title || (loading ? 'Analyzing page...' : 'Ready for Analysis')
   const url = data?.url || (loading ? 'Scanning target...' : 'Enter a public URL to get started.')
@@ -192,11 +193,15 @@ export default function PageOverview({ data, loading, crawlerData, score, aiScor
           <NavLink className="pillar-view-link">View details →</NavLink>
         </div>
         {PILLAR_MODULES.map(module => {
-          const isReal = (module.label === 'AI Understanding' && !isAwaiting && !loading && aiScore != null) ||
-                         (module.label === 'Crawler Access' && crawlerData != null)
-          const val = module.label === 'AI Understanding'
-            ? (aiScore ?? 0)
-            : (module.label === 'Crawler Access' && crawlerData ? crawlerData.score : 0)
+          const isReal = (module.label === 'AI Understanding' && !isAwaiting && (aiScore != null || loading)) ||
+                         (module.label === 'Crawler Access' && crawlerData != null && !loading) ||
+                         (module.label === 'External Intelligence' && externalScore != null && !loading)
+          
+          let val = 0;
+          if (module.label === 'AI Understanding') val = aiScore ?? 0;
+          if (module.label === 'Crawler Access') val = crawlerData ? crawlerData.score : 0;
+          if (module.label === 'External Intelligence') val = externalScore ?? 0;
+          
           const tone = isReal ? getTone(val) : 'muted'
           
           let label = 'In Dev'

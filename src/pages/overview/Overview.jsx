@@ -3,8 +3,7 @@ import '../../styles/Overview.css'
 
 import PageOverview from './PageOverview'
 import ScoreBar from './ScoreBar'
-
-/* ── SVG Icons for each module ──────────────────────────────── */
+import { computeExternalScore, computeOverallScore } from '../../utils/scoring'
 
 const ModuleIcons = {
   'crawler-access': (
@@ -109,7 +108,8 @@ function getScoreVerdict(score) {
   return 'Poor'
 }
 
-function getModuleStatus(key, data, score, crawlerData) {
+function getModuleStatus(key, data, score, crawlerData, externalScore, loading) {
+  if (loading) return 'Analyzing...'
   if (!data) return 'Awaiting Analysis'
   if (key === 'ai-understanding') {
     if (score == null) return 'Awaiting Analysis'
@@ -119,8 +119,13 @@ function getModuleStatus(key, data, score, crawlerData) {
     if (!crawlerData) return 'Awaiting Analysis'
     return getScoreVerdict(crawlerData.score)
   }
+  if (key === 'content-intelligence') {
+    if (externalScore == null) return 'Awaiting Analysis'
+    return getScoreVerdict(externalScore)
+  }
   return 'In Dev'
 }
+
 
 function groupIssues(issues = []) {
   return issues.reduce((groups, issue) => {
@@ -198,30 +203,44 @@ export default function Overview() {
     issueCount,
     scoreBreakdown,
     analyzedAt,
-    crawlerData
+    crawlerData,
+    externalData
   } = useOutletContext()
 
-  const modules = MODULE_ORDER.map(({ key, path, label, description }, idx) => ({
-    key,
-    number: idx + 1,
-    path,
-    label,
-    description,
-    icon: ModuleIcons[key],
-    status: getModuleStatus(key, data, visibilityScore, crawlerData),
-    isScoreReal: (key === 'ai-understanding' && data != null) || (key === 'crawler-access' && crawlerData != null)
-  }))
+  const externalScore = computeExternalScore(externalData)
 
   const topIssues = getTopIssueGroups(data?.a11y?.issues, 3)
   const quickWins = data ? getQuickWins(data) : []
 
-  const availableScores = []
-  if (data && visibilityScore != null) availableScores.push(visibilityScore)
-  if (crawlerData && crawlerData.score != null) availableScores.push(crawlerData.score)
+  const activeCrawlerScore = (!loading && crawlerData) ? crawlerData.score : null
+  const activeExternalScore = (!loading && externalData) ? externalScore : null
+  
+  const overallScore = computeOverallScore(
+    (data != null || loading) ? visibilityScore : null,
+    activeCrawlerScore,
+    activeExternalScore
+  )
 
-  const overallScore = availableScores.length > 0
-    ? Math.round(availableScores.reduce((a, b) => a + b, 0) / availableScores.length)
-    : null
+  const modules = MODULE_ORDER.map(({ key, path, label, description }, idx) => {
+    let scoreDisplay = null;
+    if (key === 'ai-understanding') scoreDisplay = visibilityScore;
+    if (key === 'crawler-access') scoreDisplay = activeCrawlerScore;
+    if (key === 'content-intelligence') scoreDisplay = activeExternalScore;
+
+    const isScoreReal = scoreDisplay != null;
+
+    return {
+      key,
+      number: idx + 1,
+      path,
+      label,
+      description,
+      icon: ModuleIcons[key],
+      status: getModuleStatus(key, data, visibilityScore, crawlerData, externalScore, loading),
+      isScoreReal,
+      scoreValue: scoreDisplay
+    }
+  })
 
   const scoreTone = getScoreTone(overallScore || 0)
 
@@ -235,6 +254,7 @@ export default function Overview() {
         crawlerData={crawlerData}
         score={overallScore}
         aiScore={visibilityScore}
+        externalScore={externalScore}
         issueCount={data ? issueCount : null}
         analyzedAt={analyzedAt}
       />
@@ -246,9 +266,11 @@ export default function Overview() {
 
         <div className="geo-overview-grid">
           {modules.map(module => {
-            const scoreDisplay = module.key === 'ai-understanding'
-              ? visibilityScore
-              : (module.key === 'crawler-access' && crawlerData ? crawlerData.score : 0)
+            let scoreDisplay = null;
+            if (module.key === 'ai-understanding') scoreDisplay = visibilityScore;
+            if (module.key === 'crawler-access') scoreDisplay = crawlerData?.score;
+            if (module.key === 'content-intelligence') scoreDisplay = externalScore;
+            
             const tone = module.isScoreReal ? getScoreTone(scoreDisplay) : 'muted'
             return (
               <NavLink
