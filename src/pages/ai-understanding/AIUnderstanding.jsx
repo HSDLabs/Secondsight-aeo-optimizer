@@ -13,7 +13,7 @@ export default function AIUnderstanding() {
     error,
     visibilityScore,
     scoreBreakdown,
-    analyzedAt,
+
     selectedNode,
     selectedNodeId,
     setSelectedNodeId,
@@ -120,13 +120,19 @@ export default function AIUnderstanding() {
           />
         </section>
 
-        <UnderstandingFlow
-          progressState={analysisProgress}
-          loading={loading}
-          analyzedAt={analyzedAt}
-          issueTypes={issueTypes}
-          onAction={handleUnderstandingAction}
-        />
+        {loading && !hasResults ? (
+          <div className="understanding-skeleton" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div className="skeleton-box" style={{ height: '340px', width: '100%' }} />
+            <div className="skeleton-box" style={{ height: '240px', width: '100%' }} />
+          </div>
+        ) : (
+          <>
+            <UnderstandingFlow
+              data={data}
+              progressState={analysisProgress}
+              issueTypes={issueTypes}
+              onAction={handleUnderstandingAction}
+            />
 
         <section
           id="visibility-issues"
@@ -160,7 +166,10 @@ export default function AIUnderstanding() {
             </div>
           )}
         </section>
+        </>
+        )}
       </section>
     </div>
   )
 }
+

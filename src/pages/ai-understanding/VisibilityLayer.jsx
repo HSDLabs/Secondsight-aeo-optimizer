@@ -81,8 +81,6 @@ export default function VisibilityLayer({
 
         <MachineStructureCompact
           snapshot={snapshot}
-          selectedNodeId={selectedNodeId}
-          onSelectNode={onSelectNode}
           isFocused={focusPanel === 'structure'}
           onViewTree={() => setShowTreeModal(true)}
         />
@@ -245,9 +243,9 @@ function LoadingLayerCard({ title, eyebrow }) {
       </div>
 
       <div className="loading-card-body">
-        <div className="loading-block large" />
-        <div className="loading-block medium" />
-        <div className="loading-block small" />
+        <div className="skeleton-box" style={{ height: '180px', width: '100%', marginBottom: '8px' }} />
+        <div className="skeleton-box" style={{ height: '12px', width: '75%', marginBottom: '8px' }} />
+        <div className="skeleton-box" style={{ height: '12px', width: '48%' }} />
       </div>
     </div>
   )
@@ -264,7 +262,7 @@ function LoadingScoreCard() {
   )
 }
 
-function MachineStructureCompact({ snapshot, selectedNodeId, onSelectNode, isFocused, onViewTree }) {
+function MachineStructureCompact({ snapshot, isFocused, onViewTree }) {
   const landmarks = useMemo(() => getLandmarksAndCounts(snapshot), [snapshot])
   const headerCount = useMemo(() => landmarks.header.reduce((sum, n) => sum + countNodesInSubtree(n), 0), [landmarks.header])
   const navCount = useMemo(() => landmarks.nav.reduce((sum, n) => sum + countNodesInSubtree(n), 0), [landmarks.nav])

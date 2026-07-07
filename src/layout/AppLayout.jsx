@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import URLInput from '../components/URLInput'
@@ -7,6 +8,7 @@ import URLInput from '../components/URLInput'
 // analysis state is passed down from App and forwarded to pages via Outlet
 // context, so one analysis stays live as the user moves between sections.
 export default function AppLayout({ url, setUrl, analyze, loading, outletContext }) {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const data = outletContext?.data
   const hasData = !!data
 
@@ -24,36 +26,31 @@ export default function AppLayout({ url, setUrl, analyze, loading, outletContext
   }
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <Sidebar
-        url={url}
-        setUrl={setUrl}
-        analyze={analyze}
-        loading={loading}
-        data={data}
-        analyzedAt={outletContext?.analyzedAt}
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
       <div className="app-main">
         <header className="app-topbar">
           {hasData ? (
-            <div className="app-topbar-complete" style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span className="topbar-url" style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text)' }}>
+            <div className="app-topbar-complete">
+              <div className="app-topbar-left">
+                <span className="topbar-url">
                   {data.url || url}
                 </span>
-                <span className="topbar-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', background: 'rgba(72,199,142,0.1)', color: 'var(--good)', padding: '4px 10px', borderRadius: '999px', border: '1px solid rgba(72,199,142,0.2)', fontWeight: 600 }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--good)' }} />
+                <span className="topbar-badge">
+                  <span className="topbar-badge-dot" />
                   {loading ? 'Analyzing...' : 'Analysis complete'}
                 </span>
               </div>
-              <button 
-                type="button" 
-                className="topbar-share-btn" 
+              <button
+                type="button"
+                className="topbar-share-btn"
                 onClick={handleShare}
-                style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text)', padding: '6px 14px', fontSize: '0.8rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
                 Share Report
               </button>
             </div>

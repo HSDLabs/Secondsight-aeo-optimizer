@@ -5,7 +5,7 @@ export default function missingAlt(element, context) {
   const before = element || '<img>'
   
   // simple replace or append
-  let after = before
+  let after
   if (before.includes('<img')) {
     after = before.replace('<img', `<img alt="${inferredLabel}"`)
   } else {

@@ -62,7 +62,7 @@ function ScoreGauge({ score }) {
     function animate(now) {
       const elapsed = now - start
       const progress = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
+      const eased = 1 - Math.pow(1 - progress, 5) // ease-out-quint
       setAnimatedScore(Math.round(eased * normalizedScore))
       if (progress < 1) frame = requestAnimationFrame(animate)
     }
@@ -79,7 +79,7 @@ function ScoreGauge({ score }) {
 
   return (
     <div className="hero-gauge">
-      <p className="eyebrow" style={{ textAlign: 'center' }}>SecondSight GEO Score (Beta)</p>
+      <p className="eyebrow">SecondSight GEO Score (Beta)</p>
       <div className="gauge-container">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="gauge-ring">
           <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={strokeWidth} />
@@ -88,7 +88,7 @@ function ScoreGauge({ score }) {
             fill="none" stroke={scoreColor} strokeWidth={strokeWidth}
             strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset}
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            style={{ filter: `drop-shadow(0 0 8px ${scoreColor}66)`, transition: 'stroke-dashoffset 0.3s ease' }}
+            style={{ transition: 'stroke-dashoffset 0.8s cubic-bezier(0.23, 1, 0.32, 1)' }}
           />
         </svg>
         <div className="gauge-label">
@@ -145,7 +145,7 @@ function PerspectiveThumbnail({ screenshot, url }) {
   )
 }
 
-export default function PageOverview({ data, score, analyzedAt }) {
+export default function PageOverview({ data, crawlerData, score, analyzedAt }) {
   const screenshot = data?.screenshots?.viewport || data?.screenshot
   const title = data?.title || data?.readable?.title || 'Untitled page'
 
@@ -178,8 +178,11 @@ export default function PageOverview({ data, score, analyzedAt }) {
           <NavLink className="pillar-view-link">View details →</NavLink>
         </div>
         {PILLAR_MODULES.map(module => {
-          const isReal = module.isReal && score != null
-          const val = isReal ? score : 0
+          const isReal = (module.label === 'AI Understanding' && score != null) ||
+                         (module.label === 'Crawler Access' && crawlerData != null)
+          const val = module.label === 'AI Understanding'
+            ? (score ?? 0)
+            : (module.label === 'Crawler Access' && crawlerData ? crawlerData.score : 0)
           const tone = isReal ? getTone(val) : 'muted'
           const label = isReal ? getScoreLabel(val) : 'Coming'
           return (
