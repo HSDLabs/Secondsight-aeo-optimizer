@@ -147,9 +147,12 @@ export default function App() {
   const scoreBreakdown = computeVisibilityBreakdown(data)
   const progressMetrics = getProgressMetrics(analysisProgress)
   
-  const visibilityScore = analysisProgress?.phase && analysisProgress.phase !== 'idle'
-    ? progressMetrics.understandingScore
-    : scoreBreakdown.score
+  const isAwaiting = !data && !loading && (!analysisProgress?.phase || analysisProgress.phase === 'idle')
+  const visibilityScore = isAwaiting
+    ? null
+    : (analysisProgress?.phase && analysisProgress.phase !== 'idle'
+      ? progressMetrics.understandingScore
+      : scoreBreakdown.score)
   const selectedNode = selectedNodeId ? data?.a11y?.semanticIndex?.[selectedNodeId] : null
 
   function selectIssueGroup(type) {

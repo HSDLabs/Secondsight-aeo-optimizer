@@ -51,7 +51,8 @@ export default function Sidebar({ isCollapsed, onToggle }) {
               justifyContent: 'center',
               transition: 'all 0.2s ease',
               borderRadius: '6px',
-              marginLeft: isCollapsed ? '0' : 'auto'
+              marginLeft: isCollapsed ? '0' : 'auto',
+              marginTop: isCollapsed ? '0' : '6px'
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.background = 'var(--panel-soft)'

@@ -25,19 +25,13 @@ const LinkIcon = () => (
   <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
 );
 const RedditIcon = ({size=20}) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="#FF4500">
-    <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1.872-6.533c-.707 0-1.428-.106-2.106-.296l-.371-.106-.296.25c-.753.64-1.76 1.002-2.793 1.002 0 0 .52-1.393.52-2.31 0-.154-.055-.306-.153-.418C3.865 12.38 3.2 10.82 3.2 9.1c0-3.69 4.02-6.7 8.96-6.7 4.938 0 8.958 3.01 8.958 6.7s-4.02 6.7-8.958 6.7c-.672 0-1.32-.065-1.93-.186l-.102-.02zm3.328-5.32c.793 0 1.436.643 1.436 1.436s-.643 1.437-1.436 1.437-1.437-.644-1.437-1.437.644-1.436 1.437-1.436zm-6.912 0c.793 0 1.436.643 1.436 1.436s-.643 1.437-1.436 1.437-1.437-.644-1.437-1.437.644-1.436 1.437-1.436zM12 15.39c-1.322 0-2.355-.17-3.08-.507-.22-.1-.476-.02-.593.2-.116.22-.032.485.187.59 1.07.493 2.378.717 3.486.717 1.108 0 2.416-.224 3.486-.718.22-.105.304-.37.188-.59-.118-.22-.375-.3-.594-.2-.725.337-1.758.508-3.08.508z" />
-  </svg>
+  <img src="/bxl-reddit.svg" alt="Reddit" width={size} height={size} />
 );
 const NewsIcon = ({size=20}) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} stroke="#3B82F6" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/>
-  </svg>
+  <img src="/bx-news.svg" alt="News" width={size} height={size} />
 );
 const YouTubeIcon = ({size=20}) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill="#FF0000">
-    <path d="M21.582,6.186c-0.23-0.86-0.908-1.538-1.768-1.768C18.254,4,12,4,12,4S5.746,4,4.186,4.418c-0.86,0.23-1.538,0.908-1.768,1.768C2,7.746,2,12,2,12s0,4.254,0.418,5.814c0.23,0.86,0.908,1.538,1.768,1.768C5.746,20,12,20,12,20s6.254,0,7.814-0.418c0.86-0.23,1.538-0.908,1.768-1.768C22,16.254,22,12,22,12S22,7.746,21.582,6.186z M10,15.464V8.536L16,12L10,15.464z"/>
-  </svg>
+  <img src="/bxl-youtube.svg" alt="YouTube" width={size} height={size} />
 );
 const XIcon = ({size=20}) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor">
@@ -121,7 +115,7 @@ const ReputationCard = ({ data }) => {
 };
 
 /* ── 3. Entity Card ── */
-const EntityCard = ({ entity }) => {
+const EntityCard = ({ entity, isAwaiting }) => {
   if (!entity) return null;
   return (
     <div className="ei-card ent-card">
@@ -133,11 +127,15 @@ const EntityCard = ({ entity }) => {
           <a href={entity.url} className="ent-url" target="_blank" rel="noopener noreferrer"><LinkIcon/> {entity.domain}</a>
         </div>
       </div>
-      <p className="ent-desc">Online platform or service related to {entity.name || entity.domain}, recognized for its active community and presence.</p>
+      <p className="ent-desc">
+        {isAwaiting 
+          ? "Awaiting analysis to identify entity profile and community presence." 
+          : (entity.description || `Online platform or service related to ${entity.name || entity.domain}, recognized for its active community and presence.`)}
+      </p>
       <div className="ent-meta-grid">
-        <div className="ent-meta"><span className="em-key">Industry</span><span className="em-val">Technology</span></div>
-        <div className="ent-meta"><span className="em-key">Founded</span><span className="em-val">N/A</span></div>
-        <div className="ent-meta"><span className="em-key">Headquarters</span><span className="em-val">Global</span></div>
+        <div className="ent-meta"><span className="em-key">Industry</span><span className="em-val">{isAwaiting ? '---' : 'Technology'}</span></div>
+        <div className="ent-meta"><span className="em-key">Founded</span><span className="em-val">{isAwaiting ? '---' : 'N/A'}</span></div>
+        <div className="ent-meta"><span className="em-key">Headquarters</span><span className="em-val">{isAwaiting ? '---' : 'Global'}</span></div>
       </div>
     </div>
   );
@@ -147,10 +145,10 @@ const EntityCard = ({ entity }) => {
 const SourcesCard = ({ data, loading }) => {
   const rc = data?.reddit?.length || 0, nc = data?.news?.length || 0;
   const sources = [
-    { name:'Reddit', icon:<RedditIcon size={16}/>, count:rc, status: loading?'loading':(rc>0?'Active':'Empty'), cls:'reddit' },
-    { name:'News', icon:<NewsIcon size={16}/>, count:nc, status: loading?'loading':(nc>0?'Active':'Empty'), cls:'news' },
-    { name:'YouTube', icon:<YouTubeIcon size={16}/>, count:0, status:'Limited', cls:'' },
-    { name:'X (Twitter)', icon:<XIcon size={16}/>, count:0, status:'Limited', cls:'' },
+    { name:'Reddit', icon:<RedditIcon size={20}/>, count:rc, status: loading?'loading':(rc>0?'Active':'Empty'), cls:'reddit' },
+    { name:'News', icon:<NewsIcon size={20}/>, count:nc, status: loading?'loading':(nc>0?'Active':'Empty'), cls:'news' },
+    { name:'YouTube', icon:<YouTubeIcon size={20}/>, count:0, status:'Limited', cls:'' },
+    { name:'X (Twitter)', icon:<XIcon size={20}/>, count:0, status:'Limited', cls:'' },
   ];
   return (
     <div className="ei-card src-card">
@@ -262,10 +260,15 @@ const AISummary = ({ aiData }) => {
 
 /* ── 7. Reddit Feed ── */
 const RedditFeed = ({ reddit }) => {
-  if (!reddit || !reddit.length) return null;
+  if (!reddit || !reddit.length) return (
+    <div className="feed-section">
+      <div className="feed-hdr"><span className="feed-dot reddit"/><RedditIcon size={22}/><h3>Reddit Discussions</h3><span className="feed-count">0 posts</span></div>
+      <div className="feed-empty">No Reddit discussions found for this entity.</div>
+    </div>
+  );
   return (
     <div className="feed-section">
-      <div className="feed-hdr"><span className="feed-dot reddit"/><RedditIcon size={18}/><h3>Reddit Discussions</h3><span className="feed-count">{reddit.length} posts</span></div>
+      <div className="feed-hdr"><span className="feed-dot reddit"/><RedditIcon size={22}/><h3>Reddit Discussions</h3><span className="feed-count">{reddit.length} posts</span></div>
       <div className="feed-grid">
         {reddit.map((p, i) => {
           const comments = p.numComments||p.comments||p.num_comments||0;
@@ -293,7 +296,7 @@ const RedditFeed = ({ reddit }) => {
 const NewsFeed = ({ news }) => {
   return (
     <div className="feed-section">
-      <div className="feed-hdr"><span className="feed-dot news"/><NewsIcon size={18}/><h3>Recent News</h3><span className="feed-count">{news?.length||0} articles</span></div>
+      <div className="feed-hdr"><span className="feed-dot news"/><NewsIcon size={22}/><h3>Recent News</h3><span className="feed-count">{news?.length||0} articles</span></div>
       {(!news || !news.length) ? (
         <div className="feed-empty">No recent news articles found for this entity.</div>
       ) : (
@@ -349,7 +352,12 @@ const SentimentCard = ({ reddit }) => {
     const neutral = reddit.length - pos - neg;
     return { positive: Math.round(pos/reddit.length*100), negative: Math.round(neg/reddit.length*100), neutral: Math.round(neutral/reddit.length*100) };
   }, [reddit]);
-  if (!data) return null;
+  if (!data) return (
+    <div className="ei-card sent-card">
+      <div className="card-label">Sentiment Overview</div>
+      <p className="no-data">No sentiment data available.</p>
+    </div>
+  );
   return (
     <div className="ei-card sent-card">
       <div className="card-label">Sentiment Overview</div>
@@ -425,10 +433,19 @@ const EmptyDash = () => (
   </div>
 );
 
+const MOCK_EXTERNAL_DATA = {
+  entity: { name: 'Awaiting Analysis', domain: 'example.com', url: '#' },
+  reddit: [],
+  news: [],
+  score: 0
+};
+
 /* ── Main Page ── */
 export default function ExternalIntelligence() {
   const { externalData, loading, error } = useOutletContext();
   const hasData = !!externalData;
+  const isAwaiting = !externalData && !loading;
+  const displayData = externalData || MOCK_EXTERNAL_DATA;
 
   const [aiData, setAiData] = useState({ loading: true, summary: null, trendingTopics: [] });
 
@@ -456,23 +473,20 @@ export default function ExternalIntelligence() {
   }, [externalData]);
 
   return (
-    <div className="ei-page">
+    <div className={`ei-page ${loading ? 'is-loading' : ''} ${isAwaiting ? 'is-awaiting' : ''}`}>
       {error && <div className="ei-error">{error}</div>}
 
-      {!hasData && !loading && !error && <EmptyDash/>}
-      {loading && <ActiveInvestigationLoader/>}
-
-      {hasData && !loading && (
+      <div style={{ opacity: isAwaiting ? 0.6 : 1, pointerEvents: isAwaiting || loading ? 'none' : 'auto', transition: 'opacity 0.3s' }}>
         <div className="ei-dash">
           {/* Row 1: Overview */}
           <div className="ei-row ei-overview-row">
-            <ReputationCard data={externalData}/>
-            <EntityCard entity={externalData.entity}/>
-            <SourcesCard data={externalData} loading={loading}/>
+            <ReputationCard data={displayData}/>
+            <EntityCard entity={displayData.entity} isAwaiting={isAwaiting}/>
+            <SourcesCard data={displayData} loading={loading}/>
           </div>
           
           <div className="ei-row ei-pulse-row">
-            <PulseCard reddit={externalData.reddit}/>
+            <PulseCard reddit={displayData.reddit}/>
           </div>
 
           {/* Row 2: AI */}
@@ -480,17 +494,17 @@ export default function ExternalIntelligence() {
 
           {/* Row 3: Feeds side by side */}
           <div className="ei-row ei-feeds-row">
-            <RedditFeed reddit={externalData.reddit}/>
-            <NewsFeed news={externalData.news}/>
+            <RedditFeed reddit={displayData.reddit}/>
+            <NewsFeed news={displayData.news}/>
           </div>
 
           {/* Row 4: Analytics */}
           <div className="ei-row ei-analytics-row">
             <TrendingTopics topics={aiData.trendingTopics} loading={aiData.loading} />
-            <SentimentCard reddit={externalData.reddit} />
+            <SentimentCard reddit={displayData.reddit} />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { NavLink, useOutletContext } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import '../../styles/Overview.css'
 
 import PageOverview from './PageOverview'
@@ -64,7 +65,7 @@ const MODULE_ORDER = [
   {
     key: 'ai-understanding',
     path: '/ai-understanding',
-    label: 'AI Understanding',
+    label: 'Machine Understanding',
     description: 'How well machines grasp the page structure, semantics, and entities.'
   },
   {
@@ -108,7 +109,7 @@ function getScoreVerdict(score) {
   return 'Poor'
 }
 
-function getModuleStatus(key, data, score, crawlerData, externalScore, loading) {
+function getModuleStatus(key, data, score, crawlerScore, externalScore, loading) {
   if (loading) return 'Analyzing...'
   if (!data) return 'Awaiting Analysis'
   if (key === 'ai-understanding') {
@@ -116,8 +117,8 @@ function getModuleStatus(key, data, score, crawlerData, externalScore, loading) 
     return getScoreVerdict(score)
   }
   if (key === 'crawler-access') {
-    if (!crawlerData) return 'Awaiting Analysis'
-    return getScoreVerdict(crawlerData.score)
+    if (crawlerScore == null) return 'Awaiting Analysis'
+    return getScoreVerdict(crawlerScore)
   }
   if (key === 'content-intelligence') {
     if (externalScore == null) return 'Awaiting Analysis'
@@ -162,7 +163,7 @@ function getQuickWins(data) {
 
   const missingMeta = issues.find(i => i.type === 'Missing H1' || i.type?.includes('meta'))
   if (missingMeta) {
-    wins.push({ title: 'Add meta description', desc: 'Improve click-through rate and AI understanding.', impact: 'High' })
+    wins.push({ title: 'Add meta description', desc: 'Improve click-through rate and MACHINE understanding.', impact: 'High' })
   }
 
   const emptyLinks = issues.filter(i => i.type === 'Empty link')
@@ -212,9 +213,33 @@ export default function Overview() {
   const topIssues = getTopIssueGroups(data?.a11y?.issues, 3)
   const quickWins = data ? getQuickWins(data) : []
 
-  const activeCrawlerScore = (!loading && crawlerData) ? crawlerData.score : null
-  const activeExternalScore = (!loading && externalData) ? externalScore : null
-  
+  const [fakeCrawler, setFakeCrawler] = useState(0)
+  const [fakeExternal, setFakeExternal] = useState(0)
+
+  useEffect(() => {
+    if (!loading) {
+      setFakeCrawler(0)
+      setFakeExternal(0)
+      return
+    }
+
+    const interval = setInterval(() => {
+      setFakeCrawler(prev => {
+        const jump = Math.floor(Math.random() * 10) - 2
+        return Math.min(95, Math.max(0, prev + jump))
+      })
+      setFakeExternal(prev => {
+        const jump = Math.floor(Math.random() * 10) - 2
+        return Math.min(95, Math.max(0, prev + jump))
+      })
+    }, 300)
+
+    return () => clearInterval(interval)
+  }, [loading])
+
+  const activeCrawlerScore = loading ? fakeCrawler : ((!loading && crawlerData) ? crawlerData.score : null)
+  const activeExternalScore = loading ? fakeExternal : ((!loading && externalData) ? externalScore : null)
+
   const overallScore = computeOverallScore(
     (data != null || loading) ? visibilityScore : null,
     activeCrawlerScore,
@@ -236,7 +261,7 @@ export default function Overview() {
       label,
       description,
       icon: ModuleIcons[key],
-      status: getModuleStatus(key, data, visibilityScore, crawlerData, externalScore, loading),
+      status: getModuleStatus(key, data, visibilityScore, activeCrawlerScore, activeExternalScore, loading),
       isScoreReal,
       scoreValue: scoreDisplay
     }
@@ -251,10 +276,10 @@ export default function Overview() {
       <PageOverview
         data={data}
         loading={loading}
-        crawlerData={crawlerData}
+        crawlerScore={activeCrawlerScore}
         score={overallScore}
         aiScore={visibilityScore}
-        externalScore={externalScore}
+        externalScore={activeExternalScore}
         issueCount={data ? issueCount : null}
         analyzedAt={analyzedAt}
       />
@@ -270,7 +295,7 @@ export default function Overview() {
             if (module.key === 'ai-understanding') scoreDisplay = visibilityScore;
             if (module.key === 'crawler-access') scoreDisplay = crawlerData?.score;
             if (module.key === 'content-intelligence') scoreDisplay = externalScore;
-            
+
             const tone = module.isScoreReal ? getScoreTone(scoreDisplay) : 'muted'
             return (
               <NavLink
