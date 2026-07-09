@@ -16,15 +16,18 @@ SecondSight GEO Optimizer is a professional-grade, dark-themed diagnostic dashbo
 
 ## Key Features
 
--  **Machine Understanding:** Real-time progressive timeline analyzing identity, document structure, primary content intent, extracted knowledge entities, and accessibility blockages.
--  **Crawler Access:** In-depth diagnostics for `robots.txt` compliance, sitemap parsing, indexability, and server response readiness.
+- **Machine Understanding:** Real-time progressive timeline analyzing identity, document structure, primary content intent, extracted knowledge entities, and accessibility blockages.
+- **Crawler Access:** In-depth diagnostics for `robots.txt` compliance, sitemap parsing, indexability, and server response readiness.
 - **External Intelligence:** An aggregated view of an entity's digital footprint across the web, including real-time sentiment analysis, Reddit discussions, and recent news mentions.
--  **Premium UI/UX:** Built with a sophisticated, highly-polished dark mode interface utilizing modern CSS techniques, glassmorphism, and responsive CSS Grid architecture.
+- **Premium UI/UX:** Built with a sophisticated, highly-polished dark mode interface utilizing modern CSS techniques, glassmorphism, and responsive CSS Grid architecture.
 
 ## Tech Stack
 
 - **Frontend:** React, Vite, React Router
 - **Backend:** Node.js, Express (API layer for simulations and crawling)
+- **Browser Automation:** Playwright
+- **Containerization:** Docker
+- **Deployment:** Railway
 - **Styling:** Custom Vanilla CSS with a bespoke design system
 
 ## Getting Started
@@ -33,39 +36,81 @@ SecondSight GEO Optimizer is a professional-grade, dark-themed diagnostic dashbo
 
 - Node.js (v16 or higher)
 - npm or yarn
+- Docker (optional, recommended for production deployment)
 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/HSDLabs/secondSight-geo-optimizer.git
    cd secondSight-geo-optimizer
    ```
 
-2. Install dependencies for both the client and the server (if applicable):
+2. Install dependencies:
+
    ```bash
    npm install
    ```
 
-### Running Locally
+## Running Locally (Development)
 
-You'll need to run both the frontend and the backend services.
+Start both the frontend and backend services.
 
-1. **Start the backend server:**
-   ```bash
-   npm run server
-   ```
+```bash
+npm run dev:all
+```
 
-2. **Start the Vite development server:**
-   ```bash
-   npm run dev
-   ```
+This starts:
 
-3. Open your browser and navigate to `http://localhost:5173`.
+- Vite development server: `http://localhost:5173`
+- Express API server
+
+Alternatively, you can run them separately:
+
+```bash
+npm run server
+```
+
+```bash
+npm run dev
+```
+
+## Running with Docker
+
+Build the Docker image:
+
+```bash
+docker build -t secondsight .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 3000:3000 --env-file server/.env secondsight
+```
+
+Then open:
+
+```
+http://localhost:3000
+```
+
+## Deployment
+
+SecondSight is designed to be deployed using Docker on Railway.
+
+The Docker image:
+
+- Builds the Vite frontend into the `dist` directory.
+- Serves the compiled frontend through the Express server.
+- Includes Playwright and all required browser dependencies using the official Playwright Docker image.
+- Provides a consistent runtime environment between local development and production deployments.
 
 ## Architecture & Workflows
 
 SecondSight is designed around an extensible modular architecture:
+
 - **Services (`/server/services/`)**: Independent modules for crawling, external web intelligence, and AI processing.
 - **Layers (`/server/services/layers/`)**: Granular heuristic extractors (accessibility, links, content structure).
 - **UI Architecture (`/src/`)**: Compartmentalized React components broken down by analysis pillar.
