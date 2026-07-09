@@ -1,5 +1,5 @@
 import { NavLink, useOutletContext } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import '../../styles/Overview.css'
 
 import PageOverview from './PageOverview'
@@ -152,9 +152,34 @@ function getQuickWins(data) {
   return wins.slice(0, 4)
 }
 
-function formatDelta(value) {
-  if (value > 0) return `+${value}`
-  return String(value)
+function AnimatedScore({ value, enabled = true }) {
+  const normalizedValue = Math.max(0, Math.min(100, Number(value) || 0))
+  const [displayValue, setDisplayValue] = useState(normalizedValue)
+  const displayValueRef = useRef(normalizedValue)
+
+  useEffect(() => {
+    if (!enabled) return
+
+    let frame
+    const startValue = displayValueRef.current
+    const delta = normalizedValue - startValue
+    const start = performance.now()
+    const duration = 650
+
+    function animate(now) {
+      const progress = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 4)
+      const nextValue = Math.round(startValue + delta * eased)
+      displayValueRef.current = nextValue
+      setDisplayValue(nextValue)
+      if (progress < 1) frame = requestAnimationFrame(animate)
+    }
+
+    frame = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(frame)
+  }, [normalizedValue, enabled])
+
+  return enabled ? displayValue : normalizedValue
 }
 
 /* ── Page component ─────────────────────────────────────────── */
@@ -166,7 +191,6 @@ export default function Overview() {
     error,
     visibilityScore,
     issueCount,
-    scoreBreakdown,
     analyzedAt,
     crawlerData,
     externalData
@@ -177,26 +201,28 @@ export default function Overview() {
   const topIssues = getTopIssueGroups(data?.a11y?.issues, 3)
   const quickWins = data ? getQuickWins(data) : []
 
-  const [fakeCrawler, setFakeCrawler] = useState(0)
-  const [fakeExternal, setFakeExternal] = useState(0)
+  const [fakeCrawler, setFakeCrawler] = useState(12)
+  const [fakeExternal, setFakeExternal] = useState(8)
 
   useEffect(() => {
     if (!loading) {
-      setFakeCrawler(0)
-      setFakeExternal(0)
-      return
+      const frame = requestAnimationFrame(() => {
+        setFakeCrawler(12)
+        setFakeExternal(8)
+      })
+      return () => cancelAnimationFrame(frame)
     }
 
     const interval = setInterval(() => {
       setFakeCrawler(prev => {
-        const jump = Math.floor(Math.random() * 10) - 2
-        return Math.min(95, Math.max(0, prev + jump))
+        const jump = Math.floor(Math.random() * 9) + 1
+        return Math.min(96, Math.max(18, prev + jump))
       })
       setFakeExternal(prev => {
-        const jump = Math.floor(Math.random() * 10) - 2
-        return Math.min(95, Math.max(0, prev + jump))
+        const jump = Math.floor(Math.random() * 8) + 1
+        return Math.min(94, Math.max(14, prev + jump))
       })
-    }, 300)
+    }, 420)
 
     return () => clearInterval(interval)
   }, [loading])
@@ -255,17 +281,13 @@ export default function Overview() {
 
         <div className="geo-overview-grid">
           {modules.map(module => {
-            let scoreDisplay = null;
-            if (module.key === 'ai-understanding') scoreDisplay = visibilityScore;
-            if (module.key === 'crawler-access') scoreDisplay = crawlerData?.score;
-            if (module.key === 'content-intelligence') scoreDisplay = externalScore;
-
+            const scoreDisplay = module.scoreValue
             const tone = module.isScoreReal ? getScoreTone(scoreDisplay) : 'muted'
             return (
               <NavLink
                 key={module.key}
                 to={module.path}
-                className={`geo-module-card ${module.isScoreReal ? 'has-data' : ''}`}
+                className={`geo-module-card ${module.isScoreReal ? 'has-data' : ''} ${loading ? 'is-analyzing' : ''}`}
               >
                 <div className="module-card-top">
                   <span className="module-number">{module.number}.</span>
@@ -276,7 +298,7 @@ export default function Overview() {
                 </div>
 
                 <div className="module-score">
-                  <strong>{module.isScoreReal ? scoreDisplay : '-'}</strong>
+                  <strong>{module.isScoreReal ? <AnimatedScore value={scoreDisplay} enabled={loading} /> : '-'}</strong>
                   <span>/100</span>
                 </div>
 
@@ -307,19 +329,21 @@ export default function Overview() {
               <h3>AI Visibility Trend</h3>
             </div>
             <div className="trend-score">
-              <strong style={{ color: `var(--${scoreTone})` }}>{visibilityScore}</strong>
+              <strong style={{ color: `var(--${scoreTone})` }}>
+                {overallScore != null ? <AnimatedScore value={overallScore} enabled={loading} /> : '-'}
+              </strong>
               <span>/ 100</span>
             </div>
-            <ScoreBar score={visibilityScore} />
+            <ScoreBar score={overallScore ?? 0} />
             <p className="es-muted">
-              Score is calculated based on our AI SEO framework across 3 pillars.
+              Score is calculated from the active GEO pillar scores as the analysis progresses.
             </p>
             <div className="breakdown-mini">
-              {scoreBreakdown?.items?.map(item => (
-                <div key={item.label}>
-                  <span>{item.label}</span>
-                  <strong className={item.value < 0 ? 'negative' : 'positive'}>
-                    {formatDelta(item.value)}
+              {modules.map(module => (
+                <div key={module.key}>
+                  <span>{module.label}</span>
+                  <strong className={module.scoreValue == null ? '' : getScoreTone(module.scoreValue)}>
+                    {module.scoreValue == null ? '-' : <AnimatedScore value={module.scoreValue} enabled={loading} />}
                   </strong>
                 </div>
               ))}
@@ -391,7 +415,7 @@ export default function Overview() {
             </span>
             <strong>{module.label}</strong>
             <span
-              className={`status-pill-tag tone-${module.isScoreReal ? getScoreTone(visibilityScore) : 'muted'
+              className={`status-pill-tag tone-${module.isScoreReal ? getScoreTone(module.scoreValue) : 'muted'
                 }`}
             >
               {module.status}
