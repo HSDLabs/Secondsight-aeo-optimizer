@@ -33,24 +33,6 @@ const ModuleIcons = {
       <line x1="10" y1="9" x2="8" y2="9" />
     </svg>
   ),
-  'retrieval-readiness': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-      <path d="M11 8v6M8 11h6" />
-    </svg>
-  ),
-  'citation-readiness': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 17c-2 0-3-1-3-3V9a3 3 0 0 1 3-3h1l-1 4h2l-1 7" />
-      <path d="M15 17c-2 0-3-1-3-3V9a3 3 0 0 1 3-3h1l-1 4h2l-1 7" />
-    </svg>
-  ),
-  'content-gaps': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20V10M18 20V4M6 20v-4" />
-    </svg>
-  )
 }
 
 /* ── Module catalog for the dashboard ───────────────────────── */
@@ -73,24 +55,6 @@ const MODULE_ORDER = [
     path: '/content-intelligence',
     label: 'External Intelligence',
     description: 'Aggregates insights from news, Reddit, forums, and public web discussions.'
-  },
-  {
-    key: 'retrieval-readiness',
-    path: '/retrieval-readiness',
-    label: 'Retrieval Readiness',
-    description: 'Lorem ipsum dolor sit amet, consectetur.'
-  },
-  {
-    key: 'citation-readiness',
-    path: '/citation-readiness',
-    label: 'Citation Readiness',
-    description: 'Lorem ipsum dolor sit amet, consectetur.'
-  },
-  {
-    key: 'content-gaps',
-    path: '/content-gaps',
-    label: 'Content Gaps',
-    description: 'Lorem ipsum dolor sit amet, consectetur.'
   }
 ]
 
@@ -348,7 +312,7 @@ export default function Overview() {
             </div>
             <ScoreBar score={visibilityScore} />
             <p className="es-muted">
-              Score is calculated based on our AI SEO framework across 6 pillars.
+              Score is calculated based on our AI SEO framework across 3 pillars.
             </p>
             <div className="breakdown-mini">
               {scoreBreakdown?.items?.map(item => (
