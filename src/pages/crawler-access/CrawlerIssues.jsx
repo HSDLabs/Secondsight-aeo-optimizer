@@ -1,6 +1,6 @@
 export default function CrawlerIssues({ sortedIssues, expandedIssues, setExpandedIssues }) {
   return (
-    <section className="section-block" aria-labelledby="crawler-issues-title">
+    <section className="section-block" id="crawler-issues" aria-labelledby="crawler-issues-title">
       <div className="crawler-section-header">
         <div>
           <p className="eyebrow">Deduplicated Action Queue</p>

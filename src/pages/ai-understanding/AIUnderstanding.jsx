@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import '../../styles/AIUnderstanding.css'
 import VisibilityLayer from './VisibilityLayer'
@@ -23,6 +23,17 @@ export default function AIUnderstanding() {
   } = useOutletContext()
 
   const [focusPanel, setFocusPanel] = useState(null)
+
+  useEffect(() => {
+    if (window.location.hash) {
+      const el = document.getElementById(window.location.hash.substring(1))
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 150)
+      }
+    }
+  }, [])
   const hasResults = Boolean(data && !error)
   const findingIssues = useMemo(() => getFindingIssues(analysisProgress), [analysisProgress])
   const issueTypes = useMemo(() => (

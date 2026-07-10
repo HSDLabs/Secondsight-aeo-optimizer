@@ -68,10 +68,11 @@ export default function App() {
     */
   }, [])
 
-  async function analyze() {
-    if (!url.trim()) return
+  async function analyze(targetUrl) {
+    const trimmedUrl = (typeof targetUrl === 'string' ? targetUrl : url).trim()
+    if (!trimmedUrl) return
 
-    const trimmedUrl = url.trim()
+    if (trimmedUrl !== url) setUrl(trimmedUrl)
 
     setLoading(true)
     setError(null)

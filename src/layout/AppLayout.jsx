@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { Check, ExternalLink, Share2 } from 'lucide-react'
 import Sidebar from './Sidebar'
 import URLInput from '../components/URLInput'
 
@@ -11,6 +12,18 @@ export default function AppLayout({ url, setUrl, analyze, loading, outletContext
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const data = outletContext?.data
   const hasData = !!data
+
+  useEffect(() => {
+    const handleShortcut = event => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'b') {
+        event.preventDefault()
+        setIsSidebarCollapsed(current => !current)
+      }
+    }
+
+    window.addEventListener('keydown', handleShortcut)
+    return () => window.removeEventListener('keydown', handleShortcut)
+  }, [])
 
   const handleShare = () => {
     if (navigator.share) {
@@ -37,22 +50,16 @@ export default function AppLayout({ url, setUrl, analyze, loading, outletContext
           {hasData ? (
             <div className="app-topbar-complete">
               <div className="app-topbar-left">
-                <span className="topbar-url">
-                  {data.url || url}
-                </span>
+                <span className="topbar-url"><span className="topbar-url-mark" />{data.url || url}</span>
                 <span className="topbar-badge">
-                  <span className="topbar-badge-dot" />
-                  {loading ? 'Analyzing...' : 'Analysis complete'}
+                  <Check size={12} />
+                  Analysis complete
                 </span>
               </div>
-              <button
-                type="button"
-                className="topbar-share-btn"
-                onClick={handleShare}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2.5" fill="none"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" /></svg>
-                Share Report
-              </button>
+              <div className="topbar-actions">
+                <a className="topbar-source-link" href={data.url || url} target="_blank" rel="noreferrer" aria-label="Open analyzed website"><ExternalLink size={14} /></a>
+                <button type="button" className="topbar-share-btn" onClick={handleShare}><Share2 size={14} />Share report</button>
+              </div>
             </div>
           ) : (
             <URLInput
