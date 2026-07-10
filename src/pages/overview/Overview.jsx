@@ -1,428 +1,93 @@
+import { useMemo } from 'react'
 import { NavLink, useOutletContext } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { ArrowRight, Sparkles } from 'lucide-react'
+import { RecommendationsIcon, SuccessIcon } from '../../components/icons'
 import '../../styles/Overview.css'
+import { buildOverviewModel, verdictFor } from './overviewModel'
+import {
+  FocusPanel,
+  FuturePillars,
+  HistoryPlaceholder,
+  IssuesPanel,
+  LivePillars,
+  QuickWinsPanel,
+  ScoreRing,
+} from './OverviewSections'
 
-import PageOverview from './PageOverview'
-import ScoreBar from './ScoreBar'
-import { computeExternalScore, computeOverallScore } from '../../utils/scoring'
-
-const ModuleIcons = {
-  'crawler-access': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-  ),
-  'ai-understanding': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93" />
-      <path d="M12 2a4 4 0 0 0-4 4c0 1.95 1.4 3.58 3.25 3.93" />
-      <path d="M12 10v4" />
-      <circle cx="12" cy="18" r="4" />
-      <path d="M10 18h4" />
-      <path d="M12 16v4" />
-      <path d="M4 10l2 2M20 10l-2 2" />
-    </svg>
-  ),
-  'content-intelligence': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14,2 14,8 20,8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <line x1="10" y1="9" x2="8" y2="9" />
-    </svg>
-  ),
+const pillarLabels = {
+  crawler: 'Crawler access',
+  understanding: 'Machine understanding',
+  external: 'External intelligence',
 }
-
-/* ── Module catalog for the dashboard ───────────────────────── */
-
-const MODULE_ORDER = [
-  {
-    key: 'crawler-access',
-    path: '/crawler-access',
-    label: 'Crawler Access',
-    description: 'Whether AI crawlers can fetch and render the page at all — robots rules, status codes, and JavaScript rendering.'
-  },
-  {
-    key: 'ai-understanding',
-    path: '/ai-understanding',
-    label: 'Machine Understanding',
-    description: 'How well machines grasp the page structure, semantics, and entities.'
-  },
-  {
-    key: 'content-intelligence',
-    path: '/content-intelligence',
-    label: 'External Intelligence',
-    description: 'Aggregates insights from news, Reddit, forums, and public web discussions.'
-  }
-]
-
-/* ── Helpers ────────────────────────────────────────────────── */
-
-function getScoreTone(score) {
-  if (score >= 80) return 'good'
-  if (score >= 55) return 'warning'
-  return 'poor'
-}
-
-function getScoreVerdict(score) {
-  if (score >= 80) return 'Excellent'
-  if (score >= 65) return 'Good'
-  if (score >= 55) return 'Fair'
-  return 'Poor'
-}
-
-function getModuleStatus(key, data, score, crawlerScore, externalScore, loading) {
-  if (loading) return 'Analyzing...'
-  if (!data) return 'Awaiting Analysis'
-  if (key === 'ai-understanding') {
-    if (score == null) return 'Awaiting Analysis'
-    return getScoreVerdict(score)
-  }
-  if (key === 'crawler-access') {
-    if (crawlerScore == null) return 'Awaiting Analysis'
-    return getScoreVerdict(crawlerScore)
-  }
-  if (key === 'content-intelligence') {
-    if (externalScore == null) return 'Awaiting Analysis'
-    return getScoreVerdict(externalScore)
-  }
-  return 'In Dev'
-}
-
-
-function groupIssues(issues = []) {
-  return issues.reduce((groups, issue) => {
-    const key = issue.type || 'Unknown issue'
-    if (!groups[key]) {
-      groups[key] = { items: [], severity: issue.severity || 'notice' }
-    }
-    groups[key].items.push(issue)
-    const severityRank = { critical: 3, warning: 2, notice: 1 }
-    if (severityRank[issue.severity] > severityRank[groups[key].severity]) {
-      groups[key].severity = issue.severity
-    }
-    return groups
-  }, {})
-}
-
-function getTopIssueGroups(issues = [], count = 3) {
-  const grouped = groupIssues(issues)
-  const severityRank = { critical: 3, warning: 2, notice: 1 }
-
-  return Object.entries(grouped)
-    .sort(([, a], [, b]) => {
-      const sevDiff = severityRank[b.severity] - severityRank[a.severity]
-      return sevDiff !== 0 ? sevDiff : b.items.length - a.items.length
-    })
-    .slice(0, count)
-    .map(([type, group]) => ({ type, ...group }))
-}
-
-function getQuickWins(data) {
-  const wins = []
-  const issues = data?.a11y?.issues || []
-  const readable = data?.readable
-
-  const missingMeta = issues.find(i => i.type === 'Missing H1' || i.type?.includes('meta'))
-  if (missingMeta) {
-    wins.push({ title: 'Add meta description', desc: 'Improve click-through rate and MACHINE understanding.', impact: 'High' })
-  }
-
-  const emptyLinks = issues.filter(i => i.type === 'Empty link')
-  if (emptyLinks.length > 0) {
-    wins.push({ title: 'Fix empty links', desc: `${emptyLinks.length} link(s) with no text — AI crawlers can't understand where they lead.`, impact: 'High' })
-  }
-
-  const missingAlt = issues.filter(i => i.type === 'Missing alt text')
-  if (missingAlt.length > 0) {
-    wins.push({ title: 'Add image alt text', desc: `${missingAlt.length} image(s) missing alt — reduces content understanding.`, impact: 'Medium' })
-  }
-
-  const wc = readable?.wordCount ?? 0
-  if (wc < 300) {
-    wins.push({ title: 'Add more content', desc: 'Content is too thin for comprehensive AI answers.', impact: 'High' })
-  }
-
-  if (wins.length === 0) {
-    wins.push({ title: 'Site looks good', desc: 'No critical quick wins identified.', impact: 'Low' })
-  }
-
-  return wins.slice(0, 4)
-}
-
-function AnimatedScore({ value, enabled = true }) {
-  const normalizedValue = Math.max(0, Math.min(100, Number(value) || 0))
-  const [displayValue, setDisplayValue] = useState(normalizedValue)
-  const displayValueRef = useRef(normalizedValue)
-
-  useEffect(() => {
-    if (!enabled) return
-
-    let frame
-    const startValue = displayValueRef.current
-    const delta = normalizedValue - startValue
-    const start = performance.now()
-    const duration = 650
-
-    function animate(now) {
-      const progress = Math.min((now - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 4)
-      const nextValue = Math.round(startValue + delta * eased)
-      displayValueRef.current = nextValue
-      setDisplayValue(nextValue)
-      if (progress < 1) frame = requestAnimationFrame(animate)
-    }
-
-    frame = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(frame)
-  }, [normalizedValue, enabled])
-
-  return enabled ? displayValue : normalizedValue
-}
-
-/* ── Page component ─────────────────────────────────────────── */
 
 export default function Overview() {
-  const {
-    data,
-    loading,
-    error,
-    visibilityScore,
-    issueCount,
-    analyzedAt,
-    crawlerData,
-    externalData
-  } = useOutletContext()
-
-  const externalScore = computeExternalScore(externalData)
-
-  const topIssues = getTopIssueGroups(data?.a11y?.issues, 3)
-  const quickWins = data ? getQuickWins(data) : []
-
-  const [fakeCrawler, setFakeCrawler] = useState(12)
-  const [fakeExternal, setFakeExternal] = useState(8)
-
-  useEffect(() => {
-    if (!loading) {
-      const frame = requestAnimationFrame(() => {
-        setFakeCrawler(12)
-        setFakeExternal(8)
-      })
-      return () => cancelAnimationFrame(frame)
-    }
-
-    const interval = setInterval(() => {
-      setFakeCrawler(prev => {
-        const jump = Math.floor(Math.random() * 9) + 1
-        return Math.min(96, Math.max(18, prev + jump))
-      })
-      setFakeExternal(prev => {
-        const jump = Math.floor(Math.random() * 8) + 1
-        return Math.min(94, Math.max(14, prev + jump))
-      })
-    }, 420)
-
-    return () => clearInterval(interval)
-  }, [loading])
-
-  const activeCrawlerScore = loading ? fakeCrawler : ((!loading && crawlerData) ? crawlerData.score : null)
-  const activeExternalScore = loading ? fakeExternal : ((!loading && externalData) ? externalScore : null)
-
-  const overallScore = computeOverallScore(
-    (data != null || loading) ? visibilityScore : null,
-    activeCrawlerScore,
-    activeExternalScore
+  const context = useOutletContext()
+  const { data, loading, error, visibilityScore, issueCount, analyzedAt, crawlerData, externalData } = context
+  const model = useMemo(
+    () => buildOverviewModel({
+      data: loading ? null : data,
+      crawlerData: loading ? null : crawlerData,
+      externalData: loading ? null : externalData,
+      visibilityScore: loading ? null : visibilityScore,
+    }),
+    [data, crawlerData, externalData, visibilityScore, loading],
   )
+  const hasResults = Boolean(data)
+  const analyzedLabel = analyzedAt
+    ? new Date(analyzedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+    : null
 
-  const modules = MODULE_ORDER.map(({ key, path, label, description }, idx) => {
-    let scoreDisplay = null;
-    if (key === 'ai-understanding') scoreDisplay = visibilityScore;
-    if (key === 'crawler-access') scoreDisplay = activeCrawlerScore;
-    if (key === 'content-intelligence') scoreDisplay = activeExternalScore;
-
-    const isScoreReal = scoreDisplay != null;
-
-    return {
-      key,
-      number: idx + 1,
-      path,
-      label,
-      description,
-      icon: ModuleIcons[key],
-      status: getModuleStatus(key, data, visibilityScore, activeCrawlerScore, activeExternalScore, loading),
-      isScoreReal,
-      scoreValue: scoreDisplay
-    }
-  })
-
-  const scoreTone = getScoreTone(overallScore || 0)
+  const insight = loading
+    ? 'SecondSight is evaluating all live signal groups. Scores stay neutral until the scan completes so provisional values are never mistaken for final results.'
+    : model.strongest
+    ? `${pillarLabels[model.strongest[0]]} is currently your strongest live pillar. ${model.weakest ? `${pillarLabels[model.weakest[0]]} offers the clearest opportunity to improve the overall score.` : ''}`
+    : 'Run an analysis to establish a baseline across the live SecondSight visibility pillars.'
 
   return (
-    <div className="overview-dashboard">
-      {error && <div className="error-banner">{error}</div>}
+    <div className="overview-page">
+      {error && <div className="overview-error">{error}</div>}
 
-      <PageOverview
-        data={data}
-        loading={loading}
-        crawlerScore={activeCrawlerScore}
-        score={overallScore}
-        aiScore={visibilityScore}
-        externalScore={activeExternalScore}
-        issueCount={data ? issueCount : null}
-        analyzedAt={analyzedAt}
-      />
-
-      <section className="geo-overview-section" aria-labelledby="geo-overview-title">
-        <h2 id="geo-overview-title" className="section-title">
-          <span className="eyebrow">GEO Overview</span>
-        </h2>
-
-        <div className="geo-overview-grid">
-          {modules.map(module => {
-            const scoreDisplay = module.scoreValue
-            const tone = module.isScoreReal ? getScoreTone(scoreDisplay) : 'muted'
-            return (
-              <NavLink
-                key={module.key}
-                to={module.path}
-                className={`geo-module-card ${module.isScoreReal ? 'has-data' : ''} ${loading ? 'is-analyzing' : ''}`}
-              >
-                <div className="module-card-top">
-                  <span className="module-number">{module.number}.</span>
-                  <span className="module-icon" aria-hidden="true">
-                    {module.icon}
-                  </span>
-                  <span className="module-name">{module.label}</span>
-                </div>
-
-                <div className="module-score">
-                  <strong>{module.isScoreReal ? <AnimatedScore value={scoreDisplay} enabled={loading} /> : '-'}</strong>
-                  <span>/100</span>
-                </div>
-
-                <ScoreBar score={module.isScoreReal ? scoreDisplay : 0} />
-
-                <span className={`module-verdict tone-${tone}`}>
-                  {module.status}
-                </span>
-
-                <p className="module-desc">{module.description}</p>
-
-                <span className="module-link">
-                  View details
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14M12 5l7 7-7 7" />
-                  </svg>
-                </span>
-              </NavLink>
-            )
-          })}
+      <header className="overview-intro">
+        <div>
+          <span className="overview-eyebrow"><Sparkles size={13} strokeWidth={1.7} /> AI visibility overview</span>
+          <h1>{hasResults ? 'Your visibility, explained.' : 'Understand how AI sees your site.'}</h1>
+          <p>{hasResults ? `A prioritized view of the signals shaping ${data?.url || 'your site'} across AI discovery and understanding.` : 'Run a scan to turn technical, content, and authority signals into a clear action plan.'}</p>
         </div>
-      </section>
+        {analyzedLabel && <span className="overview-last-scan">Last scan {analyzedLabel}</span>}
+      </header>
 
-      <section className="executive-summary-section" aria-labelledby="executive-title">
-        <div className="executive-summary-grid">
-          <div className="es-card es-card-trend">
-            <div className="es-card-header">
-              <h3>AI Visibility Trend</h3>
-            </div>
-            <div className="trend-score">
-              <strong style={{ color: `var(--${scoreTone})` }}>
-                {overallScore != null ? <AnimatedScore value={overallScore} enabled={loading} /> : '-'}
-              </strong>
-              <span>/ 100</span>
-            </div>
-            <ScoreBar score={overallScore ?? 0} />
-            <p className="es-muted">
-              Score is calculated from the active GEO pillar scores as the analysis progresses.
-            </p>
-            <div className="breakdown-mini">
-              {modules.map(module => (
-                <div key={module.key}>
-                  <span>{module.label}</span>
-                  <strong className={module.scoreValue == null ? '' : getScoreTone(module.scoreValue)}>
-                    {module.scoreValue == null ? '-' : <AnimatedScore value={module.scoreValue} enabled={loading} />}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          </div>
+      <section className="overview-panel overview-score-summary" aria-label="SecondSight GEO score summary">
+        <div className="overview-score-zone">
+          <span className="overview-kicker">SecondSight GEO score <b>Beta</b></span>
+          <ScoreRing score={model.overallScore} loading={loading} />
+          <strong className={`overview-score-verdict tone-${model.overallScore == null ? 'muted' : model.overallScore >= 80 ? 'good' : model.overallScore >= 55 ? 'warning' : 'poor'}`}>{loading ? 'Scanning signals' : verdictFor(model.overallScore)}</strong>
+          <span className="overview-score-caption">{loading ? 'Scores resolve when analysis completes' : `Based on ${model.signalCount} of 3 live signal groups`}</span>
+        </div>
 
-          <div className="es-card es-card-issues">
-            <div className="es-card-header">
-              <h3>Top Issues</h3>
-              <NavLink to="/ai-understanding" className="es-view-all">
-                View all issues →
-              </NavLink>
-            </div>
-            {topIssues.length > 0 ? (
-              <div className="top-issues-list">
-                {topIssues.map(issue => (
-                  <div key={issue.type} className="top-issue-item">
-                    <span className={`issue-severity-tag ${issue.severity}`}>
-                      {issue.severity}
-                    </span>
-                    <div className="top-issue-body">
-                      <span className="top-issue-name">{issue.type}</span>
-                    </div>
-                    <span className="top-issue-count">{issue.items.length}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="issues-clean-inline">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--good)" strokeWidth="2">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-                <p>No visibility blockers detected.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="es-card es-card-wins">
-            <div className="es-card-header">
-              <h3>Quick Wins</h3>
-              <span className="es-view-all">View all →</span>
-            </div>
-            <div className="quick-wins-list">
-              {quickWins.map((win, i) => (
-                <div key={i} className="quick-win-item">
-                  <svg className="qw-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 8v4l3 3" />
-                  </svg>
-                  <div className="qw-body">
-                    <span className="qw-title">{win.title}</span>
-                    <span className="qw-desc">{win.desc}</span>
-                  </div>
-                  <span className={`qw-impact impact-${win.impact.toLowerCase()}`}>
-                    {win.impact} Impact
-                  </span>
-                </div>
-              ))}
-            </div>
+        <div className="overview-insight-zone">
+          <div className="overview-insight-heading"><Sparkles size={15} strokeWidth={1.7} /><h2>Score insight</h2></div>
+          <p>{insight}</p>
+          <div className="overview-insight-list">
+            <div><RecommendationsIcon /><span><strong>{loading ? 'Analysis in progress' : model.issues[0]?.title || 'No priority blocker detected'}</strong><small>{loading ? 'Scores and recommendations will appear together when the scan completes.' : model.issues[0]?.detail || 'Keep monitoring the live pillars as your site changes.'}</small></span><NavLink to="/ai-understanding">Review <ArrowRight size={12} strokeWidth={1.7} /></NavLink></div>
+            <div><SuccessIcon /><span><strong>{model.strongest ? `Strong ${pillarLabels[model.strongest[0]]}` : 'Baseline pending'}</strong><small>{model.strongest ? `Current live score: ${Math.round(model.strongest[1])}/100.` : 'Your strongest signal will appear after analysis.'}</small></span><NavLink to="/ai-understanding">Details <ArrowRight size={12} strokeWidth={1.7} /></NavLink></div>
+            <div><Sparkles size={15} strokeWidth={1.7} /><span><strong>{loading ? 'Results held until complete' : `${issueCount || 0} detected issues`}</strong><small>{loading ? 'This prevents provisional values from appearing as final results.' : 'Use the prioritized lists below to decide what to address first.'}</small></span><NavLink to="/recommendations">Actions <ArrowRight size={12} strokeWidth={1.7} /></NavLink></div>
           </div>
         </div>
       </section>
 
-      <div className="module-status-bar" aria-label="Module status">
-        {modules.map(module => (
-          <NavLink key={module.key} to={module.path} className="status-pill">
-            <span className="status-pill-icon" aria-hidden="true">
-              {module.icon}
-            </span>
-            <strong>{module.label}</strong>
-            <span
-              className={`status-pill-tag tone-${module.isScoreReal ? getScoreTone(module.scoreValue) : 'muted'
-                }`}
-            >
-              {module.status}
-            </span>
-          </NavLink>
-        ))}
+      <LivePillars scores={model.scores} loading={loading} />
+
+      <div className="overview-two-column">
+        <IssuesPanel issues={model.issues} hasResults={hasResults} />
+        <QuickWinsPanel wins={model.quickWins} hasResults={hasResults} />
       </div>
+
+      <div className="overview-two-column overview-bottom-grid">
+        <HistoryPlaceholder />
+        <FocusPanel weakest={model.weakest} issues={model.issues} />
+      </div>
+
+      <FuturePillars />
     </div>
   )
 }
