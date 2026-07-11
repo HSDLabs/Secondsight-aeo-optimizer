@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Check, ExternalLink, RefreshCw, Share2 } from 'lucide-react'
+import './styles/Layout.css'
 import Sidebar from './Sidebar'
-import URLInput from '../components/URLInput'
+import URLInput from './header/URLInput'
 
 // Shared layout: persistent sidebar + a global header hosting the URL input,
 // with the active section rendered in the Outlet. It owns no state — the

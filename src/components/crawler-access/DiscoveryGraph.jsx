@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, ExternalLink, Network } from 'lucide-react'
-import { buildDiscoveryGraph } from './crawlerUtils'
+import { buildDiscoveryGraph } from './utils/crawlerUtils'
 
 const nodeColor = { indexable: '#34d399', noindex: '#fbbf24', blocked: '#fb7185', error: '#ef4444', redirect: '#38bdf8', unverified: '#64748b' }
 const edgeStyle = { sitemap: { stroke: '#64748b', dash: '' }, 'internal-link': { stroke: '#38bdf8', dash: '' }, redirect: { stroke: '#60a5fa', dash: '5 4' }, canonical: { stroke: '#a78bfa', dash: '2 4' } }

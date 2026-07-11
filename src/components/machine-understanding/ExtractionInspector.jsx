@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Check, Clipboard, ScanLine } from 'lucide-react'
 import SectionShell from './SectionShell'
-import { getExtractionQuality, getExtractionTabs } from './analysisViewModel'
+import { getExtractionQuality, getExtractionTabs } from './utils/analysisViewModel'
 
 export default function ExtractionInspector({ data, progressState }) {
   const tabs = useMemo(() => getExtractionTabs(data, progressState), [data, progressState])

@@ -1,6 +1,6 @@
 import { Accessibility, AlertTriangle, Boxes, Check, Eye, FileSearch, Fingerprint, Network, Sparkles } from 'lucide-react'
 import SectionShell from './SectionShell'
-import { getInterpretationCards } from './analysisViewModel'
+import { getInterpretationCards } from './utils/analysisViewModel'
 
 const cardConfig = {
   identity: { icon: Fingerprint, iconTone: 'border-amber-400/20 bg-amber-400/10 text-amber-300' },

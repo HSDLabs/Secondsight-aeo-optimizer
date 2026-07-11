@@ -5,7 +5,7 @@ import { classifySitemapUrls } from './sitemapSummary.js'
 import { validateLlmsTxt } from './llmsTxt.js'
 import { extractHtmlSignals } from './pageProber.js'
 import { buildLlmsIssues } from './index.js'
-import { presentIssue } from '../../../src/pages/crawler-access/issuePresentation.js'
+import { presentIssue } from '../../../src/components/crawler-access/utils/issuePresentation.js'
 
 test('robots analysis counts syntax and attaches stable conflict issues to both lines', () => {
   const result = analyzeRobotsTxt(`# global\nUser-agent: *\nAllow: /private\nDisallow: /private\nDisallow: /\nUnknown-thing: value`)

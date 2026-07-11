@@ -3,7 +3,7 @@ import { Accessibility, AlertTriangle, Check, CodeXml, ExternalLink, FileText, I
 import SectionShell from './SectionShell'
 import AnalysisModal from './AnalysisModal'
 import TreeNode from './TreeNode'
-import { findNodePath } from './analysisViewModel'
+import { findNodePath } from './utils/analysisViewModel'
 
 const cardClass = 'flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-slate-700/45 bg-[#0b121d]/70 p-4 transition duration-200 hover:-translate-y-0.5 hover:border-slate-600/70 hover:shadow-[0_14px_35px_rgba(0,0,0,.14)]'
 const rowClass = 'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-slate-700/25 py-2 text-[11px] last:border-0'

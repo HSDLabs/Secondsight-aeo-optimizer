@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AlertTriangle, Check, ChevronDown, FlaskConical, RotateCw, ShieldAlert } from 'lucide-react'
-import { CRAWLER_BY_ID, CRAWLER_CATALOG } from './crawlerUtils'
+import { CRAWLER_BY_ID, CRAWLER_CATALOG } from './utils/crawlerUtils'
 import CrawlerLogo from './CrawlerLogo'
 
 const accessTone = {

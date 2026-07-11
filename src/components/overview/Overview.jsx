@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { NavLink, useOutletContext } from 'react-router-dom'
 import { ArrowRight, Sparkles } from 'lucide-react'
-import { OverviewIcon, RecommendationsIcon, SuccessIcon } from '../../components/icons'
-import '../../styles/Overview.css'
-import { buildOverviewModel, verdictFor } from './overviewModel'
+import { OverviewIcon, RecommendationsIcon, SuccessIcon } from '../icons'
+import './styles/Overview.css'
+import { buildOverviewModel, verdictFor } from './utils/overviewModel'
 import {
   FocusPanel,
   FuturePillars,

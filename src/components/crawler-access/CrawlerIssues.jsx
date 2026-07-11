@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, Check, ChevronDown, Diamond, RotateCw } from 'lucide-react'
-import { CRAWLER_BY_TOKEN } from './crawlerUtils'
-import { presentIssue } from './issuePresentation'
+import { CRAWLER_BY_TOKEN } from './utils/crawlerUtils'
+import { presentIssue } from './utils/issuePresentation'
 import CrawlerLogo from './CrawlerLogo'
 
 const severityTone = {

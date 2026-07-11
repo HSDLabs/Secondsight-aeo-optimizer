@@ -1,4 +1,4 @@
-import { computeExternalScore, computeOverallScore } from '../../utils/scoring'
+import { computeExternalScore, computeOverallScore } from '../../../utils/scoring'
 
 const severityRank = { critical: 3, warning: 2, notice: 1 }
 

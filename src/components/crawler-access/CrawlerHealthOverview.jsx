@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { ArrowRight, Globe2, Info } from 'lucide-react'
-import { AI_CRAWLERS, getScoreTone } from './crawlerUtils'
-import { CrawlerIcon } from '../../components/icons'
-import { analysisSkeletonClass } from '../../components/analysisSkeleton'
+import { AI_CRAWLERS, getScoreTone } from './utils/crawlerUtils'
+import { CrawlerIcon } from '../icons'
+import { analysisSkeletonClass } from '../common/analysisSkeleton'
 
 const numberFormatter = new Intl.NumberFormat()
 const scoreToneClass = {

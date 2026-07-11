@@ -1,5 +1,5 @@
 import { Check, Minus } from 'lucide-react'
-import { getMachineSignals } from './analysisViewModel'
+import { getMachineSignals } from './utils/analysisViewModel'
 
 export default function MachineSignals({ data }) {
   return (

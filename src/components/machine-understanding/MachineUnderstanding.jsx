@@ -1,17 +1,17 @@
 import { useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import '../../styles/AIUnderstanding.css'
+import './styles/MachineUnderstanding.css'
 import MachineUnderstandingHero from './MachineUnderstandingHero'
 import RawEvidenceSection from './RawEvidenceSection'
 import InterpretationSection from './InterpretationSection'
 import ExtractionInspector from './ExtractionInspector'
 import ImprovementOpportunities from './ImprovementOpportunities'
 import MachineSignals from './MachineSignals'
-import { buildCanonicalIssues } from './progressiveAnalysis'
-import { buildInterpretationOpportunities } from './analysisViewModel'
-import { analysisSkeletonClass } from '../../components/analysisSkeleton'
+import { buildCanonicalIssues } from './utils/progressiveAnalysis'
+import { buildInterpretationOpportunities } from './utils/analysisViewModel'
+import { analysisSkeletonClass } from '../common/analysisSkeleton'
 
-export default function AIUnderstanding() {
+export default function MachineUnderstanding() {
   const {
     data,
     loading,

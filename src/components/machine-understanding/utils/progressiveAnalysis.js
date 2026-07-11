@@ -387,19 +387,7 @@ export function getProgressMetrics(progressState) {
   }
 }
 
-export function getStageMetrics(stage) {
-  const findings = stage?.findings || []
-  return {
-    totalFindings: findings.length,
-    completedFindings: findings.filter(isFindingSettled).length,
-    processingFindings: findings.filter(finding => finding.status === 'processing').length,
-    warningFindings: findings.filter(finding => finding.status === 'warning').length,
-    failedFindings: findings.filter(finding => finding.status === 'failed').length,
-    status: stage?.status || 'waiting'
-  }
-}
-
-export function calculateUnderstandingScore(progressState) {
+function calculateUnderstandingScore(progressState) {
   const stages = progressState?.stages || []
   const settledFindings = stages.flatMap(stage => (
     (stage.findings || [])
@@ -426,14 +414,14 @@ export function calculateUnderstandingScore(progressState) {
   return Math.max(0, Math.min(100, Math.round((earned / totalWeight) * 100 - penalty)))
 }
 
-export function getScoreVerdict(score) {
+function getScoreVerdict(score) {
   if (score >= 90) return { label: 'Excellent', status: 'excellent', color: '#48c78e' }
   if (score >= 75) return { label: 'Good', status: 'good', color: '#48c78e' }
   if (score >= 55) return { label: 'Needs Improvement', status: 'warning', color: '#f2b84b' }
   return { label: 'At Risk', status: 'critical', color: '#ff6b6b' }
 }
 
-export function getFindingIssues(progressState) {
+function getFindingIssues(progressState) {
   return (progressState?.stages || []).flatMap(stage => (
     (stage.findings || [])
       .filter(finding => finding.issueType && (finding.status === 'warning' || finding.status === 'failed'))

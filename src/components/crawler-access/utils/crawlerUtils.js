@@ -1,4 +1,4 @@
-import { CRAWLER_CATALOG, CRAWLER_BY_ID, CRAWLER_BY_TOKEN } from '../../../shared/crawlers.js'
+import { CRAWLER_CATALOG, CRAWLER_BY_ID, CRAWLER_BY_TOKEN } from '../../../../shared/crawlers.js'
 
 export { CRAWLER_CATALOG, CRAWLER_BY_ID, CRAWLER_BY_TOKEN }
 export const AI_CRAWLERS = CRAWLER_CATALOG.map(crawler => ({ ...crawler, ua: crawler.token, desc: crawler.description }))
@@ -7,22 +7,6 @@ export const getScoreTone = value => value >= 80 ? 'good' : value >= 55 ? 'warni
 export function getBotStatusLabel(robots, botUa) {
   const status = robots.aiCrawlerPermissions?.[botUa] || robots.aiCrawlerPermissions?.['*'] || 'allowed'
   return status === 'blocked' ? 'Blocked' : status === 'partially-blocked' ? 'Limited' : 'Allowed'
-}
-
-export function getBotRulesContent(robots, botUa) {
-  const specific = robots.rules?.find(group => group.userAgent.toLowerCase() === botUa.toLowerCase())
-  const wildcard = robots.rules?.find(group => group.userAgent === '*')
-  const group = specific || wildcard
-  if (!group?.rules?.length) return `User-agent: ${botUa}\n# No matching rules; access is allowed by default.`
-  return [`User-agent: ${group.userAgent}`, ...group.rules.map(rule => `${rule.type === 'allow' ? 'Allow' : 'Disallow'}: ${rule.path}`)].join('\n')
-}
-
-export function getProbedDetails(pages, issues, locUrl) {
-  const normalize = value => String(value || '').replace(/\/$/, '')
-  const probed = pages?.probed?.find(page => normalize(page.url) === normalize(locUrl))
-  const signals = pages?.pageSignals?.find(page => normalize(page.url) === normalize(locUrl) || normalize(page.url) === normalize(probed?.finalUrl))
-  const blocked = issues?.some(issue => issue.type === 'blocked-in-sitemap' && issue.affectedUrls?.some(url => normalize(url) === normalize(locUrl)))
-  return { status: probed?.status || null, timing: probed?.timing || 0, noindex: !!signals?.noindex, blocked, error: probed?.error, canonical: signals?.canonical, internalLinks: signals?.internalLinks || [], finalUrl: probed?.finalUrl }
 }
 
 export function buildDiscoveryGraph(crawlerData) {

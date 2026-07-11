@@ -18,7 +18,7 @@ import {
   TrendIcon,
   UnderstandingIcon,
 } from '../../components/icons'
-import { toneFor, verdictFor } from './overviewModel'
+import { toneFor, verdictFor } from './utils/overviewModel'
 
 const pillarMeta = [
   { key: 'crawler', label: 'Crawler access', icon: CrawlerIcon, path: '/crawler-access', description: 'Can AI crawlers reach and render your pages?' },

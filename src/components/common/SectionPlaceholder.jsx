@@ -1,5 +1,3 @@
-import { useOutletContext } from 'react-router-dom'
-
 export default function SectionPlaceholder({ label }) {
   return (
     <section className="section-block section-placeholder empty-hero w-screen" aria-labelledby="placeholder-title" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', margin: '0 auto', maxWidth: '1400px' }}>

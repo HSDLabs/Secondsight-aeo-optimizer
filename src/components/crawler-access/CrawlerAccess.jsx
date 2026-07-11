@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import '../../styles/CrawlerAccess.css'
+import './styles/CrawlerAccess.css'
 
-import { AI_CRAWLERS, getBotStatusLabel } from './crawlerUtils'
+import { AI_CRAWLERS, getBotStatusLabel } from './utils/crawlerUtils'
 import CrawlerHealthOverview from './CrawlerHealthOverview'
 import CrawlerPermissions from './CrawlerPermissions'
 import RobotsViewer from './RobotsViewer'

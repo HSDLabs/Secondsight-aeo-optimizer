@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Globe2, Info } from 'lucide-react'
-import { scoreVerdict } from './analysisViewModel'
+import { scoreVerdict } from './utils/analysisViewModel'
 import AnalysisModal from './AnalysisModal'
-import { UnderstandingIcon } from '../../components/icons'
-import { analysisSkeletonClass } from '../../components/analysisSkeleton'
+import { UnderstandingIcon } from '../icons'
+import { analysisSkeletonClass } from '../common/analysisSkeleton'
 
 export default function MachineUnderstandingHero({ score, scoreBreakdown, loading, url }) {
   const hasScore = typeof score === 'number'

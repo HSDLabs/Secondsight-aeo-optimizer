@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import './ExternalIntelligence.css';
+import './styles/ExternalIntelligence.css';
 
 /* ── Icons ── */
 const InfoIcon = () => (
@@ -371,68 +371,7 @@ const SentimentCard = ({ reddit }) => {
 };
 
 /* ── Active Investigation Loader ── */
-const ActiveInvestigationLoader = () => {
-  const steps = [
-    "Resolving target entity identity and domain parameters...",
-    "Querying global network for verified brand mentions...",
-    "Aggregating Reddit discussions and mapping community sentiment...",
-    "Parsing real-time news articles and media publications...",
-    "Computing heuristics and synthesizing reputation score..."
-  ];
-  
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveStep(prev => (prev < steps.length - 1 ? prev + 1 : prev));
-    }, 600); // Progress every 600ms
-    return () => clearInterval(interval);
-  }, [steps.length]);
-
-  return (
-    <div className="ei-investigation-loader">
-      <div className="ei-inv-header">
-        <div className="ei-inv-spinner">
-           <div className="ei-inv-ring"></div>
-           <div className="ei-inv-core"></div>
-        </div>
-        <div className="ei-inv-titles">
-          <h2>Synthesizing External Intelligence</h2>
-          <p>Scanning the internet for public perception and sentiment...</p>
-        </div>
-      </div>
-      
-      <div className="ei-inv-terminal">
-         {steps.map((step, idx) => {
-            let status = 'pending';
-            if (idx < activeStep) status = 'done';
-            if (idx === activeStep) status = 'active';
-            
-            return (
-              <div className={`ei-inv-step ${status}`} key={idx}>
-                 <span className="ei-inv-status-icon">
-                    {status === 'done' && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"></polyline></svg>}
-                    {status === 'active' && <div className="ei-inv-dots"><span>.</span><span>.</span><span>.</span></div>}
-                    {status === 'pending' && <div className="ei-inv-circle"></div>}
-                 </span>
-                 <span className="ei-inv-step-text">{step}</span>
-              </div>
-            )
-         })}
-      </div>
-    </div>
-  );
-};
-
 /* ── Empty State ── */
-const EmptyDash = () => (
-  <div className="ei-empty-dash">
-    <div className="ed-icons"><span className="ed-icon reddit"><RedditIcon size={28}/></span><span className="ed-icon news"><NewsIcon size={28}/></span></div>
-    <h2>External Intelligence</h2>
-    <p>Enter a URL in the header to discover what the internet is saying about this brand.</p>
-  </div>
-);
-
 const MOCK_EXTERNAL_DATA = {
   entity: { name: 'Awaiting Analysis', domain: 'example.com', url: '#' },
   reddit: [],
@@ -443,7 +382,6 @@ const MOCK_EXTERNAL_DATA = {
 /* ── Main Page ── */
 export default function ExternalIntelligence() {
   const { externalData, loading, error } = useOutletContext();
-  const hasData = !!externalData;
   const isAwaiting = !externalData && !loading;
   const displayData = externalData || MOCK_EXTERNAL_DATA;
 
@@ -465,7 +403,7 @@ export default function ExternalIntelligence() {
         } else if (alive) {
            setAiData({ loading: false, summary: null, trendingTopics: [] });
         }
-      } catch(e) {
+      } catch {
         if (alive) setAiData({ loading: false, summary: null, trendingTopics: [] });
       }
     })();
